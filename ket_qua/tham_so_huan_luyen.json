@@ -1,0 +1,84 @@
+{
+  "models": {
+    "binary": {
+      "frame_ms": 30,
+      "hop_ms": 10,
+      "minimum_silence_ms": 200,
+      "binary_threshold": 0.0015631333060107458,
+      "statistical_threshold": 0.0035795924842736936,
+      "statistics": {
+        "meanSil": 0.00041172147021974024,
+        "stdSil": 0.0009195718190945942,
+        "meanSp": 0.2096301479427106,
+        "stdSp": 0.24070333756620557,
+        "nSil": 501,
+        "nSp": 794
+      },
+      "histogram": {
+        "bins": 64,
+        "smooth": 3,
+        "weight": 5
+      },
+      "histogram_fallback": 0.09114583333333333
+    },
+    "histogram": {
+      "frame_ms": 30,
+      "hop_ms": 10,
+      "minimum_silence_ms": 200,
+      "binary_threshold": 0.0015631333060107458,
+      "statistical_threshold": 0.0035795924842736936,
+      "statistics": {
+        "meanSil": 0.00041172147021974024,
+        "stdSil": 0.0009195718190945942,
+        "meanSp": 0.2096301479427106,
+        "stdSp": 0.24070333756620557,
+        "nSil": 501,
+        "nSp": 794
+      },
+      "histogram": {
+        "bins": 128,
+        "smooth": 1,
+        "weight": 10
+      },
+      "histogram_fallback": 0.04794034090909091
+    },
+    "statistical": {
+      "frame_ms": 30,
+      "hop_ms": 10,
+      "minimum_silence_ms": 200,
+      "binary_threshold": 0.0015631333060107458,
+      "statistical_threshold": 0.0035795924842736936,
+      "statistics": {
+        "meanSil": 0.00041172147021974024,
+        "stdSil": 0.0009195718190945942,
+        "meanSp": 0.2096301479427106,
+        "stdSp": 0.24070333756620557,
+        "nSil": 501,
+        "nSp": 794
+      },
+      "histogram": {
+        "bins": 64,
+        "smooth": 3,
+        "weight": 5
+      },
+      "histogram_fallback": 0.09114583333333333
+    }
+  },
+  "validation": {
+    "binary": {
+      "balanced_error": 0.0396188604,
+      "boundary_misses": 3,
+      "mean_mae_ms": 11.25000000000001
+    },
+    "statistical": {
+      "balanced_error": 0.0093341955,
+      "boundary_misses": 0,
+      "mean_mae_ms": 12.50000000000001
+    },
+    "histogram": {
+      "balanced_error": 0.0408535036,
+      "boundary_misses": 4,
+      "mean_mae_ms": 23.75000000000005
+    }
+  }
+}
