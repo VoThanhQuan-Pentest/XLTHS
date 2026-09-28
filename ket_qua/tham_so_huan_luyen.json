@@ -67,8 +67,8 @@
   "validation": {
     "binary": {
       "balanced_error": 0.0396188604,
-      "boundary_misses": 3,
-      "mean_mae_ms": 11.25000000000001
+      "boundary_misses": 1,
+      "mean_mae_ms": 35.00000000000003
     },
     "statistical": {
       "balanced_error": 0.0093341955,

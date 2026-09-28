@@ -30,10 +30,20 @@ def test_features_and_labels_two_sample_rates():
         assert len(feature.times) == len(feature.normalized_ste)
         assert np.all(feature.normalized_ste == 0)
         assert np.isfinite(feature.log_ste).all()
+        assert len(feature.f0) == len(feature.times)
         labels = (Interval(0, 0.2, False), Interval(0.2, 0.5, True))
         speech, valid = speech_at(feature.times, labels)
         assert speech.any() and (~speech & valid).any()
         assert not valid[-1]
+
+
+def test_f0_autocorrelation_on_known_tone():
+    fs = 16000
+    time = np.arange(fs) / fs
+    feature = extract(0.5 * np.sin(2 * np.pi * 200 * time), fs, 30)
+    voiced = feature.f0[np.isfinite(feature.f0)]
+    assert len(voiced) > 80
+    assert abs(np.median(voiced) - 200) < 3
 
 
 def test_thresholds_and_fallback():
@@ -55,6 +65,9 @@ def test_boundary_matching_counts_extra():
     assert result["extra"] == 2
     assert result["missed"] == 0
     assert abs(result["mae_ms"] - 10) < 1e-8
+    # Sai lệch lớn hơn 200 ms vẫn phải được tính, không được biến thành biên thiếu/thừa.
+    far = boundary_scores([(0.5, True)], [(0.9, True)])
+    assert far["matched"] == 1 and abs(far["mae_ms"] - 400) < 1e-8
 
 
 def test_prediction_does_not_accept_labels():

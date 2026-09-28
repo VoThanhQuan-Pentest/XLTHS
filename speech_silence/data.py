@@ -21,6 +21,8 @@ class Record:
     fs: int
     samples: np.ndarray
     labels: tuple[Interval, ...]
+    reference_f0_mean: float | None = None
+    reference_f0_std: float | None = None
 
     @property
     def duration(self) -> float:
@@ -67,7 +69,14 @@ def read_record(path: Path) -> Record:
     if raw.ndim != 1 or raw.dtype != np.int16:
         raise ValueError(f"Chỉ hỗ trợ WAV mono PCM 16-bit: {path}")
     samples = raw.astype(np.float64) / 32768.0
-    return Record(path.stem, fs, samples, read_labels(path.with_suffix(".lab"), len(samples) / fs))
+    lab_path = path.with_suffix(".lab")
+    f0_stats: dict[str, float] = {}
+    for line in lab_path.read_text(encoding="utf-8").splitlines():
+        fields = line.split()
+        if len(fields) == 2 and fields[0] in {"F0mean", "F0std"}:
+            f0_stats[fields[0]] = float(fields[1])
+    return Record(path.stem, fs, samples, read_labels(lab_path, len(samples) / fs),
+                  f0_stats.get("F0mean"), f0_stats.get("F0std"))
 
 
 def speech_at(times: np.ndarray, labels: tuple[Interval, ...]) -> tuple[np.ndarray, np.ndarray]:
@@ -82,4 +91,3 @@ def speech_at(times: np.ndarray, labels: tuple[Interval, ...]) -> tuple[np.ndarr
 
 def reference_boundaries(labels: tuple[Interval, ...]) -> list[tuple[float, bool]]:
     return [(row.start, row.speech) for prev, row in zip(labels, labels[1:]) if row.speech != prev.speech]
-

@@ -22,7 +22,7 @@ METHOD_LABELS = {"binary": "Tìm kiếm nhị phân", "histogram": "Histogram", 
 def training_arrays(records: list[Record], frame_ms: int) -> tuple[np.ndarray, np.ndarray]:
     sil, sp = [], []
     for record in records:
-        features = extract(record.samples, record.fs, frame_ms)
+        features = extract(record.samples, record.fs, frame_ms, compute_f0=False)
         truth, valid = speech_at(features.times, record.labels)
         sil.extend(features.normalized_ste[valid & ~truth])
         sp.extend(features.normalized_ste[valid & truth])
@@ -47,10 +47,11 @@ def fit(records: list[Record], frame_ms: int, histogram: HistogramConfig) -> dic
             "histogram": asdict(histogram), "histogram_fallback": fallback}
 
 
-def predict(samples: np.ndarray, fs: int, model: dict, method: str) -> tuple[Features, np.ndarray, float, bool]:
+def predict(samples: np.ndarray, fs: int, model: dict, method: str,
+            compute_f0: bool = True) -> tuple[Features, np.ndarray, float, bool]:
     if method not in METHODS:
         raise ValueError(f"Thuật toán không hợp lệ: {method}")
-    features = extract(samples, fs, model["frame_ms"], model["hop_ms"])
+    features = extract(samples, fs, model["frame_ms"], model["hop_ms"], compute_f0=compute_f0)
     fallback_used = False
     if method == "binary":
         threshold = model["binary_threshold"]
@@ -81,7 +82,7 @@ def choose(records: list[Record]) -> tuple[dict, dict]:
                 train = [record for i, record in enumerate(records) if i != held]
                 model = fit(train, frame_ms, hist)
                 record = records[held]
-                features, mask, _, _ = predict(record.samples, record.fs, model, method)
+                features, mask, _, _ = predict(record.samples, record.fs, model, method, compute_f0=False)
                 scores.append(score(record, features, mask))
             key = (round(float(np.mean([s["balanced_error"] for s in scores])), 10),
                    sum(s["missed"] + s["extra"] for s in scores),
@@ -98,7 +99,7 @@ def choose(records: list[Record]) -> tuple[dict, dict]:
 
 def plot_result(record: Record, method: str, features: Features, mask: np.ndarray,
                 threshold: float, metrics: dict, path: Path) -> None:
-    fig, (ax, fx, logax) = plt.subplots(3, 1, figsize=(13, 8), sharex=True, layout="constrained")
+    fig, (ax, fx, logax, f0ax) = plt.subplots(4, 1, figsize=(13, 10), sharex=True, layout="constrained")
     t = np.arange(len(record.samples)) / record.fs
     ax.plot(t, record.samples, color="0.25", linewidth=0.5)
     ax.set_ylabel("Biên độ")
@@ -109,20 +110,28 @@ def plot_result(record: Record, method: str, features: Features, mask: np.ndarra
     logax.plot(features.times, features.log_ste, color="#6f42a2", lw=1, label="logSTE (dB)")
     logax.plot(features.times, features.log_ma, color="#009e73", lw=1, alpha=0.75, label="logMA (dB)")
     logax.set_ylabel("Mức (dB)")
-    logax.set_xlabel("Thời gian (giây)")
+    f0ax.plot(features.times, features.f0, color="#d55e00", lw=1.1, marker=".", ms=2,
+              label="F0 ước lượng")
+    if record.reference_f0_mean is not None:
+        f0ax.axhline(record.reference_f0_mean, color="#0072b2", ls="--", lw=1,
+                     label=f"F0mean LAB: {record.reference_f0_mean:.1f} Hz")
+    f0ax.set_ylabel("F0 (Hz)")
+    f0ax.set_xlabel("Thời gian (giây)")
+    f0ax.set_ylim(50, 420)
     for left, right, is_speech in segments(mask, features.edges):
         if is_speech:
             fx.axvspan(left, right, color="#b7dfc0", alpha=0.22)
     for i, (boundary, _) in enumerate(predicted_boundaries(mask, features.edges)):
-        for axis in (ax, fx, logax):
+        for axis in (ax, fx, logax, f0ax):
             axis.axvline(boundary, color="blue", lw=1.4, label="Biên dự đoán" if i == 0 and axis is ax else None)
     for i, (boundary, _) in enumerate(reference_boundaries(record.labels)):
-        for axis in (ax, fx, logax):
+        for axis in (ax, fx, logax, f0ax):
             axis.axvline(boundary, color="red", ls="--", lw=1.4,
                          label="Biên chuẩn" if i == 0 and axis is ax else None)
     ax.legend(loc="upper right", fontsize=9)
     fx.legend(loc="upper right", fontsize=9)
     logax.legend(loc="upper right", fontsize=9)
+    f0ax.legend(loc="upper right", fontsize=9)
     mae = "KXĐ" if metrics["mae_ms"] is None else f'{metrics["mae_ms"]:.1f}'
     fig.suptitle(f'{record.name} — {METHOD_LABELS[method]} | MAE: {mae} ms | '
                  f'đúng/thừa/thiếu: {metrics["matched"]}/{metrics["extra"]}/{metrics["missed"]}')
@@ -132,10 +141,10 @@ def plot_result(record: Record, method: str, features: Features, mask: np.ndarra
 
 
 def plot_comparison(record: Record, predictions: dict[str, tuple[Features, np.ndarray]], path: Path) -> None:
-    fig, axes = plt.subplots(4, 1, figsize=(13, 8), sharex=True, layout="constrained")
+    fig, axes = plt.subplots(5, 1, figsize=(13, 10), sharex=True, layout="constrained")
     axes[0].plot(np.arange(len(record.samples)) / record.fs, record.samples, color="0.25", lw=0.5)
     axes[0].set_ylabel("WAV")
-    for axis, method in zip(axes[1:], METHODS):
+    for axis, method in zip(axes[1:4], METHODS):
         features, mask = predictions[method]
         axis.plot(features.times, features.normalized_ste, color="0.35", lw=0.8)
         for left, right, speech in segments(mask, features.edges):
@@ -144,7 +153,13 @@ def plot_comparison(record: Record, predictions: dict[str, tuple[Features, np.nd
         for boundary, _ in predicted_boundaries(mask, features.edges):
             axis.axvline(boundary, color="blue", lw=1.3)
         axis.set_ylabel(METHOD_LABELS[method], fontsize=9)
-    for axis in axes:
+    representative = predictions[METHODS[0]][0]
+    axes[4].plot(representative.times, representative.f0, color="#d55e00", lw=1, marker=".", ms=2)
+    if record.reference_f0_mean is not None:
+        axes[4].axhline(record.reference_f0_mean, color="#0072b2", ls="--", lw=1)
+    axes[4].set_ylabel("F0 (Hz)")
+    axes[4].set_ylim(50, 420)
+    for axis in axes[:4]:
         for boundary, _ in reference_boundaries(record.labels):
             axis.axvline(boundary, color="red", ls="--", lw=1.3)
     axes[-1].set_xlabel("Thời gian (giây)")
@@ -152,6 +167,53 @@ def plot_comparison(record: Record, predictions: dict[str, tuple[Features, np.nd
     fig.suptitle(f"So sánh ba thuật toán — {record.name} | xanh: dự đoán, đỏ: chuẩn")
     fig.savefig(path, dpi=160)
     plt.close(fig)
+
+
+def describe_result(record: Record, method: str, features: Features, mask: np.ndarray,
+                    threshold: float, metrics: dict) -> list[str]:
+    """Tạo bình luận ngắn, có vị trí sai cụ thể để đưa thẳng lên slide."""
+    lines = [f"### {record.name} — {METHOD_LABELS[method]}", ""]
+    details = metrics["boundary_details"]
+    if details:
+        positions = []
+        for item in details:
+            kind = "bắt đầu Speech" if item["starts_speech"] else "kết thúc Speech"
+            positions.append(f'{kind}: chuẩn {item["reference_s"]:.2f} s, dự đoán '
+                             f'{item["predicted_s"]:.2f} s, lệch {item["error_ms"]:+.0f} ms')
+        lines.append("- Sai lệch biên: " + "; ".join(positions) + ".")
+    lines.append(f'- MAE/RMSE = {metrics["mae_ms"]:.1f}/{metrics["rmse_ms"]:.1f} ms; '
+                 f'biên đúng/thừa/thiếu = {metrics["matched"]}/{metrics["extra"]}/{metrics["missed"]}.')
+    predicted = predicted_boundaries(mask, features.edges)
+    if metrics["extra"]:
+        matched_times = {round(item["predicted_s"], 6) for item in details}
+        extras = [(time, kind) for time, kind in predicted if round(time, 6) not in matched_times]
+        for time, starts_speech in extras:
+            if starts_speech:
+                reason = (f"năng lượng nền vượt ngưỡng {threshold:.4f}, tạo một đoạn Speech giả")
+            else:
+                reason = (f"STE rơi dưới ngưỡng {threshold:.4f} đủ lâu, chia tiếng nói thành khoảng lặng giả")
+            lines.append(f'- Biên thừa tại {time:.2f} s ({"bắt đầu Speech" if starts_speech else "bắt đầu Silence"}): '
+                         f"{reason}.")
+    elif metrics["missed"]:
+        lines.append("- Có biên bị bỏ sót vì STE quanh chuyển tiếp không đổi đủ rõ so với ngưỡng.")
+    else:
+        maximum_error = max((abs(item["error_ms"]) for item in details), default=0)
+        if maximum_error <= 30:
+            assessment = "Hai biên dự đoán bám sát biên chuẩn"
+        elif maximum_error <= 100:
+            assessment = "Sai lệch biên ở mức vừa, thấy rõ trên đồ thị"
+        else:
+            assessment = "Có sai lệch biên lớn, thấy rõ trên đồ thị"
+        lines.append(f"- {assessment}; không phát sinh đoạn Speech/Silence giả.")
+    voiced = features.f0[np.isfinite(features.f0)]
+    if len(voiced):
+        reference_text = (f", so với F0mean LAB {record.reference_f0_mean:.1f} Hz"
+                          if record.reference_f0_mean is not None else "")
+        lines.append(f"- F0 chỉ hiện ở các khung hữu thanh; trung vị {np.median(voiced):.1f} Hz"
+                     f"{reference_text}. Các khoảng trống F0 tương ứng silence hoặc âm vô thanh; "
+                     "các đỉnh nhọn có thể là lỗi chọn họa âm của phép tự tương quan.")
+    lines.append("")
+    return lines
 
 
 def plot_distributions(records: list[Record], models: dict, path: Path) -> None:
@@ -173,7 +235,7 @@ def write_csv(path: Path, rows: list[dict]) -> None:
     if not rows:
         return
     with path.open("w", newline="", encoding="utf-8-sig") as stream:
-        writer = csv.DictWriter(stream, fieldnames=list(rows[0]))
+        writer = csv.DictWriter(stream, fieldnames=list(rows[0]), lineterminator="\n")
         writer.writeheader()
         writer.writerows(rows)
 
@@ -194,6 +256,8 @@ def run(root: Path, output: Path, only: str | None = None, noise: bool = True) -
     methods = (only,) if only else METHODS
     plot_distributions(train, models, output / "phan_bo_huan_luyen.png")
     rows, boundaries, noise_rows = [], [], []
+    figure_comments = ["# Bình luận từng hình kết quả", "",
+                       "Các vị trí dưới đây lấy trực tiếp từ biên chuẩn và biên dự đoán trên hình.", ""]
     for record in test:
         print(f"\nTín hiệu: {record.name} | SNR nền ước lượng: {estimate_snr(record):.1f} dB")
         all_predictions = {}
@@ -209,6 +273,7 @@ def run(root: Path, output: Path, only: str | None = None, noise: bool = True) -
                 boundaries.append({"wav": record.name, "method": method, "time_s": time,
                                    "starts_speech": starts_speech})
             plot_result(record, method, features, mask, threshold, metrics, output / f"{record.name}_{method}.png")
+            figure_comments.extend(describe_result(record, method, features, mask, threshold, metrics))
             mae = "KXĐ" if metrics["mae_ms"] is None else f'{metrics["mae_ms"]:.1f}'
             print(f'  {METHOD_LABELS[method]}: MAE={mae} ms, biên đúng/thừa/thiếu='
                   f'{metrics["matched"]}/{metrics["extra"]}/{metrics["missed"]}')
@@ -219,7 +284,7 @@ def run(root: Path, output: Path, only: str | None = None, noise: bool = True) -
                         rng = np.random.default_rng(rng_seed + repeat)
                         signal_power = float(np.mean(record.samples ** 2))
                         added = rng.normal(0, np.sqrt(signal_power / (10 ** (db / 10))), len(record.samples))
-                        nf, nm, _, _ = predict(record.samples + added, record.fs, model, method)
+                        nf, nm, _, _ = predict(record.samples + added, record.fs, model, method, compute_f0=False)
                         noise_rows.append({"wav": record.name, "method": method, "signal_to_added_noise_db": db,
                                            "seed": rng_seed + repeat, **score(record, nf, nm)})
         if not only:
@@ -228,6 +293,7 @@ def run(root: Path, output: Path, only: str | None = None, noise: bool = True) -
     write_csv(output / "bien_du_doan.csv", boundaries)
     if noise:
         write_csv(output / "khao_sat_nhieu.csv", noise_rows)
+    (output / "binh_luan_tung_hinh.md").write_text("\n".join(figure_comments), encoding="utf-8")
     lines = ["# Tóm tắt kết quả", "", "Các số liệu sau được đo trên tập kiểm thử; tham số chỉ chọn bằng tập huấn luyện.", ""]
     for method in methods:
         subset = [r for r in rows if r["method"] == method]

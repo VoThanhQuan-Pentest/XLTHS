@@ -7,25 +7,30 @@ from .data import Record, reference_boundaries, speech_at
 from .features import Features, predicted_boundaries
 
 
-def boundary_scores(reference: list[tuple[float, bool]], predicted: list[tuple[float, bool]], gate_s: float = 0.2) -> dict:
-    # Ghép một-một theo thứ tự: tối đa số cặp, rồi tối thiểu tổng độ lệch.
+def boundary_scores(reference: list[tuple[float, bool]], predicted: list[tuple[float, bool]]) -> dict:
+    """Ghép biên cùng loại theo thứ tự, không áp dụng dung sai chấp nhận."""
+    # 200 ms chỉ dùng để loại silence ảo, không được dùng để làm đẹp metric.
     @lru_cache(None)
     def solve(i: int, j: int) -> tuple[int, float, tuple[tuple[int, int], ...]]:
         if i == len(reference) or j == len(predicted):
             return 0, 0.0, ()
         options = [solve(i + 1, j), solve(i, j + 1)]
-        if reference[i][1] == predicted[j][1] and abs(reference[i][0] - predicted[j][0]) <= gate_s:
+        if reference[i][1] == predicted[j][1]:
             n, error, pairs = solve(i + 1, j + 1)
             options.append((n + 1, error + abs(reference[i][0] - predicted[j][0]), ((i, j),) + pairs))
         return max(options, key=lambda row: (row[0], -row[1]))
     count, _, pairs = solve(0, 0)
     errors = np.array([(predicted[j][0] - reference[i][0]) * 1000 for i, j in pairs])
+    details = [{"reference_s": reference[i][0], "predicted_s": predicted[j][0],
+                "starts_speech": reference[i][1], "error_ms": float((predicted[j][0] - reference[i][0]) * 1000)}
+               for i, j in pairs]
     return {"matched": count, "missed": len(reference) - count, "extra": len(predicted) - count,
             "mae_ms": float(np.mean(abs(errors))) if count else None,
             "rmse_ms": float(np.sqrt(np.mean(errors ** 2))) if count else None,
             "precision": count / len(predicted) if predicted else (1.0 if not reference else 0.0),
             "recall": count / len(reference) if reference else 1.0,
-            "f1": 2 * count / (len(reference) + len(predicted)) if reference or predicted else 1.0}
+            "f1": 2 * count / (len(reference) + len(predicted)) if reference or predicted else 1.0,
+            "boundary_details": details}
 
 
 def score(record: Record, features: Features, mask: np.ndarray) -> dict:
