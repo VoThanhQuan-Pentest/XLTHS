@@ -42,7 +42,7 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument(
         "--output", type=Path, default=Path(__file__).resolve().parent / "ket_qua",
-        help="Thư mục lưu kết quả đồ thị, CSV và nhận xét (mặc định: ./ket_qua)"
+        help="Thư mục lưu kết quả đồ thị và bảng số liệu CSV (mặc định: ./ket_qua)"
     )
 
     # Khối 3: Thiết lập các tùy chọn thuật toán và chế độ demo

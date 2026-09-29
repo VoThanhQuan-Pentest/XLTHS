@@ -419,72 +419,6 @@ def plot_comparison(record: Record, predictions: dict[str, tuple[Features, np.nd
     plt.close(fig)
 
 
-def describe_result(record: Record, method: str, features: Features, mask: np.ndarray,
-                    threshold: float, metrics: dict) -> list[str]:
-    """Tạo nhận xét định lượng và định tính cho từng hình phục vụ báo cáo slide.
-
-    Nêu rõ: mức độ đúng/sai (lệch bao nhiêu ms), vị trí sai trên đồ thị (giây thứ mấy),
-    và nguyên nhân sai (nhiễu nền, ngưỡng adaptive, v.v.).
-
-    Args:
-        record: Bản ghi âm thanh kiểm thử.
-        method: Thuật toán phân đoạn.
-        features: Các đặc trưng ngắn hạn.
-        mask: Mảng boolean phân đoạn.
-        threshold: Ngưỡng phân đoạn.
-        metrics: Kết quả đánh giá sai số.
-
-    Returns:
-        Danh sách các dòng văn bản Markdown nhận xét.
-    """
-    # Khối 1: Tiêu đề và tổng quan sai lệch biên
-    lines = [f"### {record.name} — {METHOD_LABELS[method]}", ""]
-    details = metrics["boundary_details"]
-    if details:
-        positions = []
-        for item in details:
-            kind = "bắt đầu Speech" if item["starts_speech"] else "kết thúc Speech"
-            positions.append(
-                f'{kind}: chuẩn {item["reference_s"]:.2f} s, dự đoán {item["predicted_s"]:.2f} s, '
-                f'lệch {item["error_ms"]:+.0f} ms'
-            )
-        lines.append("- Sai lệch biên: " + "; ".join(positions) + ".")
-
-    lines.append(
-        f'- MAE/RMSE = {metrics["mae_ms"]:.1f}/{metrics["rmse_ms"]:.1f} ms; '
-        f'biên đúng/thừa/thiếu = {metrics["matched"]}/{metrics["extra"]}/{metrics["missed"]}.'
-    )
-
-    # Khối 2: Nhận xét chi tiết nguyên nhân phát sinh biên thừa hoặc biên thiếu
-    predicted = predicted_boundaries(mask, features.edges)
-    if metrics["extra"]:
-        matched_times = {round(item["predicted_s"], 6) for item in details}
-        extras = [(t_pos, kind) for t_pos, kind in predicted if round(t_pos, 6) not in matched_times]
-        for t_pos, starts_speech in extras:
-            if starts_speech:
-                reason = f"nhiễu nền vượt ngưỡng {threshold:.4f}, tạo một đoạn Speech giả"
-            else:
-                reason = f"STE rơi dưới ngưỡng {threshold:.4f} đủ lâu, chia tiếng nói thành khoảng lặng giả"
-            lines.append(
-                f'- Biên thừa tại {t_pos:.2f} s ({"bắt đầu Speech" if starts_speech else "bắt đầu Silence"}): {reason}.'
-            )
-    elif metrics["missed"]:
-        lines.append("- Có biên bị bỏ sót vì STE quanh vùng chuyển tiếp không vượt ngưỡng rõ rệt.")
-    else:
-        max_err = max((abs(item["error_ms"]) for item in details), default=0)
-        assessment = "Hai biên dự đoán bám sát biên chuẩn" if max_err <= 30 else "Sai lệch biên ở mức vừa phải"
-        lines.append(f"- {assessment}; không phát sinh đoạn Speech/Silence giả.")
-
-    # Khối 3: Nhận xét về đường tần số cơ bản F0
-    voiced = features.f0[np.isfinite(features.f0)]
-    if len(voiced):
-        ref_text = f", so với F0mean LAB {record.reference_f0_mean:.1f} Hz" if record.reference_f0_mean else ""
-        lines.append(
-            f"- F0 chỉ hiện ở các khung hữu thanh; trung vị {np.median(voiced):.1f} Hz{ref_text}. "
-            f"Các khoảng trống F0 tương ứng silence hoặc âm vô thanh; đỉnh nhọn có thể do chọn họa âm của tự tương quan."
-        )
-    lines.append("")
-    return lines
 
 
 def plot_distributions(records: list[Record], models: dict, path: Path) -> None:
@@ -567,10 +501,6 @@ def run(root: Path, output: Path, only: str | None = None, noise: bool = True,
     plot_distributions(train, models, output / "phan_bo_huan_luyen.png")
 
     rows, boundaries, noise_rows = [], [], []
-    figure_comments = [
-        "# Bình luận từng hình kết quả", "",
-        "Các vị trí dưới đây lấy trực tiếp từ biên chuẩn và biên dự đoán trên hình.", ""
-    ]
     demo_figures: list[plt.Figure] = []
 
     # Khối 3: Dự đoán trên 4 tệp kiểm thử và tạo các figure
@@ -611,7 +541,6 @@ def run(root: Path, output: Path, only: str | None = None, noise: bool = True,
             else:
                 plt.close(fig)
 
-            figure_comments.extend(describe_result(record, method, features, mask, threshold, metrics))
             mae_str = "KXĐ" if metrics["mae_ms"] is None else f"{metrics['mae_ms']:.1f}"
             print(f'  {METHOD_LABELS[method]}: MAE={mae_str} ms, '
                   f'biên đúng/thừa/thiếu={metrics["matched"]}/{metrics["extra"]}/{metrics["missed"]}')
@@ -638,7 +567,6 @@ def run(root: Path, output: Path, only: str | None = None, noise: bool = True,
     write_csv(output / "bien_du_doan.csv", boundaries)
     if noise:
         write_csv(output / "khao_sat_nhieu.csv", noise_rows)
-    (output / "binh_luan_tung_hinh.md").write_text("\n".join(figure_comments), encoding="utf-8")
 
     # Khối 5: Sắp xếp 4 Figure lên 4 góc màn hình và hiển thị cho GV quan sát
     if show_gui and demo_figures:
