@@ -15,21 +15,24 @@ Mở các tệp theo thứ tự sau để người chấm thấy rõ luồng d�
 
 ## 2. Demo chương trình
 
-Chạy tại thư mục dự án:
+Chạy trực tiếp tại thư mục dự án (hoặc bấm nút **Run** trên file `main.py` trong IDE):
 
 ```bash
 python3 main.py --no-noise
 ```
 
-Lệnh này huấn luyện và xử lý đủ bốn file `phone_F2`, `phone_M2`, `studio_F2`, `studio_M2` trong một lần chạy. Dùng `python3 main.py` khi muốn chạy thêm khảo sát nhiễu.
+**Hành vi khi chạy CT (đúng chuẩn yêu cầu đề bài):**
+- Chỉ cần bấm Run chạy **đúng 1 lần duy nhất**.
+- CT tự động nạp 4 file test trong `TinHieuKiemThu`, xuất kết quả trên **4 cửa sổ Figure** tương ứng.
+- Chương trình **tự động sắp xếp 4 Figure vào 4 góc màn hình** (Top-Left, Top-Right, Bottom-Left, Bottom-Right) để GV quan sát cùng lúc.
+- Mỗi plot con (subplot) trên từng Figure đều có **Title** và **Axis Label (xlabel, ylabel)** phân biệt rõ ràng:
+  - *Plot 1*: Dạng sóng Waveform & Biên phân đoạn (Đỏ: Chuẩn, Xanh: Dự đoán).
+  - *Plot 2*: STE chuẩn hóa & Đường ngưỡng nằm ngang T & Vùng tiếng nói Speech phát hiện.
+  - *Plot 3*: Mức năng lượng logSTE (dB) và logMA (dB).
+  - *Plot 4*: Đường tần số cơ bản F0 ước lượng và đường F0mean chuẩn LAB.
+- Toàn bộ hình ảnh và số liệu đánh giá cũng được tự động lưu vào thư mục `ket_qua/`.
 
-Sau khi chương trình kết thúc, mở theo thứ tự:
-
-1. `ket_qua/phan_bo_huan_luyen.png`: hai phân bố normalized STE và ngưỡng thống kê.
-2. Bốn hình `*_so_sanh.png`: so sánh nhanh ba thuật toán trên từng tín hiệu.
-3. Các hình `*_binary.png`, `*_histogram.png`, `*_statistical.png`: waveform, STE, logSTE/logMA, F0, biên dự đoán xanh và biên chuẩn đỏ.
-4. `ket_qua/binh_luan_tung_hinh.md`: vị trí và nguyên nhân sai cụ thể cho từng hình.
-5. `ket_qua/ghi_chu_slide.md`: bảng số liệu tổng hợp và kết quả khảo sát nhiễu.
+*(Lưu ý: Nếu muốn chạy không bật giao diện GUI để kiểm tra nhanh trong terminal, có thể thêm cờ `--no-show`: `python3 main.py --no-noise --no-show`)*
 
 ## 3. Nội dung nói khi chỉ vào hình
 

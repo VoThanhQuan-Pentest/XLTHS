@@ -19,7 +19,7 @@
         "smooth": 3,
         "weight": 5
       },
-      "histogram_fallback": 0.09114583333333333
+      "histogram_fallback": 0.13541666666666666
     },
     "histogram": {
       "frame_ms": 30,
@@ -61,7 +61,7 @@
         "smooth": 3,
         "weight": 5
       },
-      "histogram_fallback": 0.09114583333333333
+      "histogram_fallback": 0.13541666666666666
     }
   },
   "validation": {
