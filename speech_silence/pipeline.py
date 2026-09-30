@@ -23,6 +23,7 @@ from .algorithms import HistogramConfig, binary_threshold, gaussian_threshold, h
 from .data import Record, discover, read_record, speech_at, reference_boundaries
 from .evaluation import score, estimate_snr
 from .features import Features, extract, remove_virtual_silence, predicted_boundaries, segments
+from .demo import plot_demo, figure_comments
 
 METHODS = ("binary", "histogram", "statistical")
 METHOD_LABELS = {
@@ -162,6 +163,7 @@ def choose(records: list[Record]) -> tuple[dict, dict]:
                       for w in (2, 5, 10)]
     }
 
+    # Lưu ứng viên tốt nhất riêng cho từng thuật toán, không dùng dữ liệu kiểm thử.
     selected: dict[str, tuple[int, HistogramConfig]] = {}
     validation: dict[str, dict] = {}
 
@@ -318,8 +320,15 @@ def arrange_4_figures(figures: list[plt.Figure]) -> None:
 
     Args:
         figures: Danh sách chứa đúng 4 đối tượng Figure tương ứng 4 tệp kiểm thử.
+    Returns:
+        None. Thay đổi vị trí cửa sổ GUI, in hướng dẫn nếu backend không hỗ trợ.
     """
-    # Khối 1: Xác định kích thước vùng hiển thị khả dụng của màn hình
+    # Khối 1: Hiện cửa sổ trước khi đặt vị trí để backend hoàn tất khung cửa sổ.
+    for fig in figures:
+        fig.canvas.manager.show()
+        fig.canvas.flush_events()
+
+    # Khối 2: Xác định kích thước vùng hiển thị khả dụng của màn hình.
     screen_x, screen_y = 0, 0
     screen_w, screen_h = 1920, 1080
 
@@ -332,10 +341,13 @@ def arrange_4_figures(figures: list[plt.Figure]) -> None:
                 screen_x, screen_y = geom.x(), geom.y()
                 screen_w, screen_h = geom.width(), geom.height()
                 break
+            if win is not None and hasattr(win, "winfo_screenwidth"):
+                screen_w, screen_h = win.winfo_screenwidth(), win.winfo_screenheight()
+                break
         except Exception:
             pass
 
-    # Khối 2: Tính toán kích thước mỗi cửa sổ xấp xỉ 1/4 màn hình
+    # Khối 3: Tính toán kích thước mỗi cửa sổ xấp xỉ 1/4 màn hình.
     win_w = screen_w // 2
     win_h = screen_h // 2
 
@@ -347,7 +359,7 @@ def arrange_4_figures(figures: list[plt.Figure]) -> None:
         (screen_x + win_w, screen_y + win_h)
     ]
 
-    # Khối 3: Gán vị trí hình học cho từng cửa sổ Figure
+    # Khối 4: Gán vị trí hình học cho từng cửa sổ Figure.
     for i, fig in enumerate(figures[:4]):
         qx, qy = quadrants[i]
         try:
@@ -355,11 +367,15 @@ def arrange_4_figures(figures: list[plt.Figure]) -> None:
             win = getattr(manager, "window", None)
             if win is not None:
                 if hasattr(win, "setGeometry"):  # Qt backend
-                    win.setGeometry(qx, qy, win_w, win_h)
+                    win.setGeometry(qx + 8, qy + 28, win_w - 16, win_h - 48)
                 elif hasattr(win, "wm_geometry"):  # Tkinter backend
-                    win.wm_geometry(f"{win_w}x{win_h}+{qx}+{qy}")
-        except Exception:
-            pass
+                    win.wm_geometry(f"{win_w - 16}x{win_h - 48}+{qx + 8}+{qy + 28}")
+                else:
+                    print("Backend chưa hỗ trợ tự xếp cửa sổ; hãy đặt figure vào bốn góc thủ công.")
+            else:
+                print("Backend không có cửa sổ GUI. PNG đã lưu để quan sát kết quả.")
+        except Exception as error:
+            print(f"Không tự xếp được Figure {i + 1}: {error}")
 
 
 def plot_comparison(record: Record, predictions: dict[str, tuple[Features, np.ndarray]], path: Path) -> None:
@@ -369,6 +385,8 @@ def plot_comparison(record: Record, predictions: dict[str, tuple[Features, np.nd
         record: Đối tượng Record của tệp âm thanh.
         predictions: Từ điển chứa kết quả dự đoán của từng thuật toán.
         path: Đường dẫn tệp PNG để lưu ảnh so sánh.
+    Returns:
+        None. Lưu hình so sánh trong path (hàm hỗ trợ, không gọi trong demo bốn figure).
     """
     # Khối 1: Khởi tạo đồ thị 5 dải so sánh
     fig, axes = plt.subplots(5, 1, figsize=(13, 10), sharex=True, layout="constrained")
@@ -428,6 +446,8 @@ def plot_distributions(records: list[Record], models: dict, path: Path) -> None:
         records: Danh sách bản ghi huấn luyện.
         models: Từ điển chứa mô hình và ngưỡng thống kê.
         path: Đường dẫn lưu ảnh.
+    Returns:
+        None. Lưu phân bố training trong path (hàm hỗ trợ, không gọi trong demo).
     """
     # Khối 1: Lấy mẫu năng lượng và khởi tạo đồ thị
     frame_ms = models["statistical"]["frame_ms"]
@@ -458,6 +478,8 @@ def write_csv(path: Path, rows: list[dict]) -> None:
     Args:
         path: Đường dẫn tệp CSV đầu ra.
         rows: Danh sách các dòng dữ liệu dạng dict.
+    Returns:
+        None. Ghi bảng số liệu ra tệp path nếu có dữ liệu.
     """
     if not rows:
         return
@@ -477,10 +499,14 @@ def run(root: Path, output: Path, only: str | None = None, noise: bool = True,
         only: Chọn 1 thuật toán cụ thể ('binary', 'histogram', 'statistical') hoặc None cho cả 3.
         noise: Khảo sát ảnh hưởng khi thêm nhiễu trắng (SNR = 30, 20, 10, 0 dB).
         show_gui: Nếu True, mở 4 Figure trên màn hình và tự sắp xếp 4 góc cho GV quan sát.
+    Returns:
+        None. Lưu bốn PNG, CSV và bình luận Markdown trong thư mục output.
     """
     # Khối 1: Nạp dữ liệu huấn luyện và kiểm thử
     train = [read_record(p) for p in discover(root, "TinHieuHuanLuyen")]
     test = [read_record(p) for p in discover(root, "TinHieuKiemThu")]
+    if len(test) != 4:
+        raise ValueError(f"Demo yêu cầu đúng 4 WAV kiểm thử, hiện tìm thấy {len(test)}")
     output.mkdir(parents=True, exist_ok=True)
 
     # Khối 2: Huấn luyện và xác định ngưỡng tối ưu
@@ -497,11 +523,11 @@ def run(root: Path, output: Path, only: str | None = None, noise: bool = True,
         )
 
     methods = (only,) if only else METHODS
-    demo_method = only if only else "statistical"  # Mặc định demo thuật toán Gaussian tối ưu nhất
-    plot_distributions(train, models, output / "phan_bo_huan_luyen.png")
-
     rows, boundaries, noise_rows = [], [], []
     demo_figures: list[plt.Figure] = []
+    comments = ["# Bình luận bốn figure kiểm thử", "",
+                "Mỗi figure ứng với một WAV và chứa toàn bộ các phương pháp đã chọn.",
+                "Biên ghép là cặp cùng hướng để đo sai lệch, không có dung sai chấp nhận 200 ms.", ""]
 
     # Khối 3: Dự đoán trên 4 tệp kiểm thử và tạo các figure
     for file_idx, record in enumerate(test, 1):
@@ -512,7 +538,8 @@ def run(root: Path, output: Path, only: str | None = None, noise: bool = True,
             model = models[method]
             features, mask, threshold, fallback = predict(record.samples, record.fs, model, method)
             metrics = score(record, features, mask)
-            all_predictions[method] = (features, mask)
+            all_predictions[method] = {"features": features, "mask": mask, "threshold": threshold,
+                                       "metrics": metrics, "fallback": fallback}
 
             # Lưu số liệu đánh giá
             row = {
@@ -521,29 +548,16 @@ def run(root: Path, output: Path, only: str | None = None, noise: bool = True,
             }
             rows.append(row)
 
+            # Khối 3c: Xuất danh sách biên theo giây, giữ thông tin hướng chuyển tiếp.
             for b_time, starts_sp in predicted_boundaries(mask, features.edges):
                 boundaries.append({
                     "wav": record.name, "method": method, "time_s": b_time, "starts_speech": starts_sp
                 })
 
-            # Tạo figure kết quả chi tiết
-            out_img_path = output / f"{record.name}_{method}.png"
-            # Nếu là thuật toán demo chính, giữ figure để mở cửa sổ 4 góc
-            is_demo_fig = (method == demo_method) and show_gui
-            fig = plot_result(
-                record, method, features, mask, threshold, metrics,
-                path=out_img_path,
-                fig_num=file_idx if is_demo_fig else None
-            )
-
-            if is_demo_fig:
-                demo_figures.append(fig)
-            else:
-                plt.close(fig)
-
+            # Khối 3a: In số liệu của từng phương pháp; chỉ vẽ sau khi đủ kết quả WAV này.
             mae_str = "KXĐ" if metrics["mae_ms"] is None else f"{metrics['mae_ms']:.1f}"
             print(f'  {METHOD_LABELS[method]}: MAE={mae_str} ms, '
-                  f'biên đúng/thừa/thiếu={metrics["matched"]}/{metrics["extra"]}/{metrics["missed"]}')
+                  f'biên ghép/thừa/thiếu={metrics["matched"]}/{metrics["extra"]}/{metrics["missed"]}')
 
             # Khảo sát khả năng kháng nhiễu nếu được bật
             if noise:
@@ -559,14 +573,18 @@ def run(root: Path, output: Path, only: str | None = None, noise: bool = True,
                             "seed": rng_seed + repeat, **score(record, nf, nm)
                         })
 
-        if not only:
-            plot_comparison(record, all_predictions, output / f"{record.name}_so_sanh.png")
+        # Khối 3b: Tạo đúng một Figure cho WAV, chứa cả ba phương pháp ở chế độ all.
+        fig = plot_demo(record, all_predictions, METHOD_LABELS, output / f"{record.name}.png", file_idx)
+        fig.canvas.manager.set_window_title(f"Figure {file_idx}: {record.name}.wav")
+        demo_figures.append(fig)
+        comments.extend(figure_comments(record, all_predictions, METHOD_LABELS))
 
     # Khối 4: Xuất các tệp báo cáo tổng hợp
     write_csv(output / "ket_qua.csv", rows)
     write_csv(output / "bien_du_doan.csv", boundaries)
     if noise:
         write_csv(output / "khao_sat_nhieu.csv", noise_rows)
+    (output / "binh_luan_tung_hinh.md").write_text("\n".join(comments), encoding="utf-8")
 
     # Khối 5: Sắp xếp 4 Figure lên 4 góc màn hình và hiển thị cho GV quan sát
     if show_gui and demo_figures:
@@ -574,5 +592,8 @@ def run(root: Path, output: Path, only: str | None = None, noise: bool = True,
         arrange_4_figures(demo_figures)
         print("--> Nhấn nút đóng cửa sổ hoặc Ctrl+C để kết thúc demo.")
         plt.show()
+    else:
+        for fig in demo_figures:
+            plt.close(fig)
 
     print(f"\nĐã hoàn thành! Toàn bộ kết quả đã được lưu tại: {output}")

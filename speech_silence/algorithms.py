@@ -207,6 +207,7 @@ def gaussian_threshold(silence: np.ndarray, speech: np.ndarray) -> tuple[float, 
 
     # Khối 5: Chọn nghiệm có tổng sai số phân lớp nhỏ nhất dựa trên normal_cdf tự viết
     def total_error(th: float) -> float:
+        """Tính lỗi kỳ vọng hai lớp cho ngưỡng th; trả về xác suất lỗi cân bằng."""
         # P(lỗi) = [P(Sil > th) + P(Sp < th)] / 2
         return ((1.0 - normal_cdf(th, ms, sd_s)) + normal_cdf(th, mp, sd_p)) / 2.0
 

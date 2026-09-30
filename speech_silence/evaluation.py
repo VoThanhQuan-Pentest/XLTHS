@@ -42,6 +42,7 @@ def boundary_scores(reference: list[tuple[float, bool]],
     # Khối 1: Quy hoạch động tìm cách ghép cặp nhiều nhất với tổng sai số nhỏ nhất
     @lru_cache(None)
     def solve(i: int, j: int) -> tuple[int, float, tuple[tuple[int, int], ...]]:
+        """Ghép từ biên i/j; trả số cặp, tổng độ lệch và chỉ số các cặp tối ưu."""
         if i == len(reference) or j == len(predicted):
             return 0, 0.0, ()
 

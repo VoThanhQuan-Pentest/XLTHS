@@ -6,6 +6,8 @@ Cách thức demo trước Giảng viên:
 - Xuất ra kết quả trên 4 Figure riêng biệt (mỗi Figure cho 1 tệp tín hiệu).
 - Mỗi Figure chứa đầy đủ kết quả trung gian (STE, logSTE/logMA) và kết quả cuối cùng
   (biên chuẩn Ground Truth màu đỏ, biên dự đoán màu xanh, và đường F0 màu cam).
+- Mặc định cả ba thuật toán nằm trong cùng Figure của từng WAV.
+- Bốn PNG và bình luận riêng lưu trong 'ket_qua/demo/'.
 - Chương trình tự động sắp xếp 4 cửa sổ Figure vào đúng 4 góc của màn hình
   (Top-Left, Top-Right, Bottom-Left, Bottom-Right) để GV quan sát thuận tiện.
 - Mỗi plot con (subplot) đều có tiêu đề (title) và nhãn trục (axis label) phân biệt rõ ràng.
@@ -14,7 +16,14 @@ Cách thức demo trước Giảng viên:
 from __future__ import annotations
 
 import argparse
+import os
 from pathlib import Path
+
+# Qt trên Wayland không cho chương trình tự đặt vị trí cửa sổ.
+# Khi có DISPLAY, ưu tiên X11/XWayland trong tiến trình demo để xếp bốn góc.
+# Giữ cấu hình QT_QPA_PLATFORM nếu người dùng đã đặt rõ từ bên ngoài.
+if os.name == "posix" and os.environ.get("DISPLAY"):
+    os.environ.setdefault("QT_QPA_PLATFORM", "xcb")
 
 from speech_silence.pipeline import METHODS, run
 
@@ -41,8 +50,8 @@ def parse_args() -> argparse.Namespace:
         help="Thư mục dự án chứa TinHieuHuanLuyen và TinHieuKiemThu (mặc định: thư mục hiện tại)"
     )
     parser.add_argument(
-        "--output", type=Path, default=Path(__file__).resolve().parent / "ket_qua",
-        help="Thư mục lưu kết quả đồ thị và bảng số liệu CSV (mặc định: ./ket_qua)"
+        "--output", type=Path, default=Path(__file__).resolve().parent / "ket_qua" / "demo",
+        help="Thư mục lưu bốn hình, bình luận và CSV (mặc định: ./ket_qua/demo)"
     )
 
     # Khối 3: Thiết lập các tùy chọn thuật toán và chế độ demo
@@ -63,7 +72,7 @@ def parse_args() -> argparse.Namespace:
 
 
 def main() -> None:
-    """Hàm điều khiển chính: Nạp tham số, in thông báo và khởi chạy quy trình phân đoạn."""
+    """Khởi chạy demo từ đối số dòng lệnh, xuất bốn figure; không trả giá trị."""
     # Khối 1: Phân tích các tùy chọn dòng lệnh
     args = parse_args()
     selected_method = None if args.algorithm == "all" else args.algorithm
