@@ -58,13 +58,15 @@ def training_arrays(records: list[Record], frame_ms: int) -> tuple[np.ndarray, n
     return np.asarray(silence_values), np.asarray(speech_values)
 
 
-def fit(records: list[Record], frame_ms: int, histogram: HistogramConfig) -> dict:
+def fit(records: list[Record], frame_ms: int, histogram: HistogramConfig,
+        method: str | None = None) -> dict:
     """Xác định bộ tham số và các ngưỡng phân đoạn tối ưu từ dữ liệu huấn luyện.
 
     Args:
         records: Danh sách Record thuộc tập huấn luyện.
         frame_ms: Độ dài khung (ms).
         histogram: Cấu hình tham số HistogramConfig.
+        method: Thuật toán cần huấn luyện; None huấn luyện cả ba.
 
     Returns:
         Từ điển chứa bộ mô hình huấn luyện (ngưỡng nhị phân, ngưỡng Gaussian, ngưỡng dự phòng).
@@ -74,29 +76,26 @@ def fit(records: list[Record], frame_ms: int, histogram: HistogramConfig) -> dic
     if not len(sil) or not len(sp):
         raise ValueError("Dữ liệu huấn luyện thiếu một trong hai lớp Speech hoặc Silence")
 
-    # Khối 2: Tính toán ngưỡng Gaussian và ngưỡng nhị phân
-    statistical_th, stats = gaussian_threshold(sil, sp)
-    binary_th = binary_threshold(sil, sp)
-
-    # Khối 3: Tính ngưỡng dự phòng (fallback) cho Histogram trên dữ liệu gộp
-    fallback_th = float(np.clip((np.median(sil) + np.median(sp)) / 2.0, 0.0, 1.0))
-    pooled = np.concatenate([sil, sp])
-    try:
-        fallback_th, _ = histogram_threshold(pooled, histogram)
-    except ValueError:
-        pass
-
-    # Khối 4: Đóng gói tham số mô hình đã học
-    return {
+    # Khối 2: Đóng gói cấu hình chung, chỉ tính thuật toán đang được chọn để demo.
+    model = {
         "frame_ms": frame_ms,
         "hop_ms": 10,
         "minimum_silence_ms": 200,
-        "binary_threshold": binary_th,
-        "statistical_threshold": statistical_th,
-        "statistics": stats,
-        "histogram": asdict(histogram),
-        "histogram_fallback": fallback_th
     }
+    if method is None or method == "binary":
+        model["binary_threshold"] = binary_threshold(sil, sp)
+    if method is None or method == "statistical":
+        model["statistical_threshold"], model["statistics"] = gaussian_threshold(sil, sp)
+
+    # Khối 3: Chỉ Histogram cần cấu hình và ngưỡng dự phòng từ tập huấn luyện.
+    if method is None or method == "histogram":
+        fallback_th = float(np.clip((np.median(sil) + np.median(sp)) / 2.0, 0.0, 1.0))
+        try:
+            fallback_th, _ = histogram_threshold(np.concatenate([sil, sp]), histogram)
+        except ValueError:
+            pass
+        model.update(histogram=asdict(histogram), histogram_fallback=fallback_th)
+    return model
 
 
 def predict(samples: np.ndarray, fs: int, model: dict, method: str,
@@ -143,14 +142,15 @@ def predict(samples: np.ndarray, fs: int, model: dict, method: str,
     return features, mask, float(threshold), fallback_used
 
 
-def choose(records: list[Record]) -> tuple[dict, dict]:
+def choose(records: list[Record], only: str | None = None) -> tuple[dict, dict]:
     """Tìm kiếm siêu tham số tối ưu (frame_ms, cấu hình histogram) bằng phương pháp Cross-Validation.
 
     Args:
         records: Danh sách các Record trong tập huấn luyện.
+        only: Thuật toán của sinh viên, hoặc None để so sánh cả ba.
 
     Returns:
-        tuple gồm (models, validation_metrics) cho 3 thuật toán.
+        tuple gồm (models, validation_metrics) chỉ cho thuật toán được chọn, hoặc cả ba khi only=None.
     """
     # Khối 1: Định nghĩa không gian tìm kiếm siêu tham số
     configs = {
@@ -168,14 +168,16 @@ def choose(records: list[Record]) -> tuple[dict, dict]:
     validation: dict[str, dict] = {}
 
     # Khối 2: Đánh giá Leave-One-Out trên từng ứng viên tham số
-    for method, candidates in configs.items():
+    methods = (only,) if only else METHODS
+    for method in methods:
+        candidates = configs[method]
         best_score = None
         for frame_ms, hist in candidates:
             scores = []
             for held_idx in range(len(records)):
                 train_subset = [r for i, r in enumerate(records) if i != held_idx]
                 val_record = records[held_idx]
-                fitted_model = fit(train_subset, frame_ms, hist)
+                fitted_model = fit(train_subset, frame_ms, hist, method=method)
                 feat, msk, _, _ = predict(val_record.samples, val_record.fs, fitted_model, method, compute_f0=False)
                 scores.append(score(val_record, feat, msk))
 
@@ -197,7 +199,7 @@ def choose(records: list[Record]) -> tuple[dict, dict]:
                 }
 
     # Khối 3: Huấn luyện lại trên toàn bộ tập dữ liệu huấn luyện với tham số tốt nhất
-    models = {method: fit(records, *selected[method]) for method in METHODS}
+    models = {method: fit(records, *selected[method], method=method) for method in methods}
     return models, validation
 
 
@@ -511,16 +513,12 @@ def run(root: Path, output: Path, only: str | None = None, noise: bool = True,
 
     # Khối 2: Huấn luyện và xác định ngưỡng tối ưu
     model_path = output / "tham_so_huan_luyen.json"
-    shared_model_path = output.parent / "tham_so_huan_luyen.json" if only else model_path
-    if only and shared_model_path.exists():
-        package = json.loads(shared_model_path.read_text(encoding="utf-8"))
-        models, validation = package["models"], package["validation"]
-    else:
-        models, validation = choose(train)
-        model_path.write_text(
-            json.dumps({"models": models, "validation": validation}, indent=2, ensure_ascii=False),
-            encoding="utf-8"
-        )
+    # Chỉ huấn luyện thuật toán đang demo, không mượn mô hình của thành viên khác.
+    models, validation = choose(train, only=only)
+    model_path.write_text(
+        json.dumps({"models": models, "validation": validation}, indent=2, ensure_ascii=False),
+        encoding="utf-8"
+    )
 
     methods = (only,) if only else METHODS
     rows, boundaries, noise_rows = [], [], []

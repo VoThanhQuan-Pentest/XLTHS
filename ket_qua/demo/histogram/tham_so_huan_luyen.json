@@ -1,0 +1,22 @@
+{
+  "models": {
+    "histogram": {
+      "frame_ms": 30,
+      "hop_ms": 10,
+      "minimum_silence_ms": 200,
+      "histogram": {
+        "bins": 128,
+        "smooth": 1,
+        "weight": 10
+      },
+      "histogram_fallback": 0.04794034090909091
+    }
+  },
+  "validation": {
+    "histogram": {
+      "balanced_error": 0.0408535036,
+      "boundary_misses": 4,
+      "mean_mae_ms": 23.75000000000005
+    }
+  }
+}
