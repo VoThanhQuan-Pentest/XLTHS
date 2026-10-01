@@ -1,5 +1,19 @@
 # Demo bốn figure
 
+## Thư mục riêng cho từng thành viên
+
+| Thành viên | Thư mục | File bấm Run | Mã thuật toán |
+|---|---|---|---|
+| Binary Search | TT1_BinarySearch | TT1_BinarySearch/main.py | TT1_BinarySearch/algorithm.py |
+| Histogram | TT2_Histogram | TT2_Histogram/main.py | TT2_Histogram/algorithm.py |
+| Statistical Gaussian | TT3_Statistics | TT3_Statistics/main.py | TT3_Statistics/algorithm.py |
+
+Mỗi file main.py chạy thẳng một thuật toán, không có menu và không cần --algorithm. Kết quả lưu trong thư mục ket_qua của chính thành viên: bốn hình, tham số, CSV và bình luận riêng. Mặc định bỏ khảo sát nhiễu để demo nhanh, bật lại bằng --noise.
+
+Dữ liệu WAV/LAB và các hàm tiện ích trong speech_silence dùng chung ở gốc dự án. Mã tính ngưỡng thực tế đã được chuyển vào algorithm.py của từng thành viên; speech_silence/algorithms.py chỉ xuất lại tên hàm để chương trình nhóm và kiểm thử cũ tiếp tục hoạt động. Cần giữ cấu trúc đầy đủ của dự án khi chạy trên máy khác.
+
+## Điểm chạy chung của nhóm
+
 Mỗi thành viên chạy hoặc bấm Run tại `main.py` một lần, rồi chọn thuật toán phụ trách:
 
 ```bash

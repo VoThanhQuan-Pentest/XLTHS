@@ -1,0 +1,25 @@
+{
+  "models": {
+    "statistical": {
+      "frame_ms": 30,
+      "hop_ms": 10,
+      "minimum_silence_ms": 200,
+      "statistical_threshold": 0.0035795924842736936,
+      "statistics": {
+        "meanSil": 0.00041172147021974024,
+        "stdSil": 0.0009195718190945942,
+        "meanSp": 0.2096301479427106,
+        "stdSp": 0.24070333756620557,
+        "nSil": 501,
+        "nSp": 794
+      }
+    }
+  },
+  "validation": {
+    "statistical": {
+      "balanced_error": 0.0093341955,
+      "boundary_misses": 0,
+      "mean_mae_ms": 12.50000000000001
+    }
+  }
+}

@@ -1,0 +1,17 @@
+{
+  "models": {
+    "binary": {
+      "frame_ms": 30,
+      "hop_ms": 10,
+      "minimum_silence_ms": 200,
+      "binary_threshold": 0.0015631333060107458
+    }
+  },
+  "validation": {
+    "binary": {
+      "balanced_error": 0.0396188604,
+      "boundary_misses": 1,
+      "mean_mae_ms": 35.00000000000003
+    }
+  }
+}

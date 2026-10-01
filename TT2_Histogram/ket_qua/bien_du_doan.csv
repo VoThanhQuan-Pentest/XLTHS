@@ -1,0 +1,11 @@
+﻿wav,method,time_s,starts_speech
+phone_F2,histogram,1.05,True
+phone_F2,histogram,2.54,False
+phone_F2,histogram,2.79,True
+phone_F2,histogram,4.0,False
+phone_M2,histogram,0.53,True
+phone_M2,histogram,2.5,False
+studio_F2,histogram,0.76,True
+studio_F2,histogram,2.34,False
+studio_M2,histogram,0.47,True
+studio_M2,histogram,1.9,False
