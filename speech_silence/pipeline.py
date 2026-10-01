@@ -156,11 +156,13 @@ def choose(records: list[Record], only: str | None = None) -> tuple[dict, dict]:
     configs = {
         "binary": [(f, HistogramConfig()) for f in (20, 25, 30)],
         "statistical": [(f, HistogramConfig()) for f in (20, 25, 30)],
-        "histogram": [(f, HistogramConfig(b, s, w))
+        "histogram": [(f, HistogramConfig(b, s, w, distance, depth))
                       for f in (20, 25, 30)
                       for b in (32, 64, 128)
                       for s in (1, 3, 5)
-                      for w in (2, 5, 10)]
+                      for w in (2, 5, 10)
+                      for distance in (3, 6, 12)
+                      for depth in (0.2, 0.4)]
     }
 
     # Lưu ứng viên tốt nhất riêng cho từng thuật toán, không dùng dữ liệu kiểm thử.
@@ -186,7 +188,7 @@ def choose(records: list[Record], only: str | None = None) -> tuple[dict, dict]:
                 round(float(np.mean([s["balanced_error"] for s in scores])), 10),
                 sum(s["missed"] + s["extra"] for s in scores),
                 np.mean([s["mae_ms"] if s["mae_ms"] is not None else 200 for s in scores]),
-                frame_ms, hist.bins, hist.smooth, hist.weight
+                frame_ms, hist.bins, hist.smooth, hist.weight, hist.min_peak_distance, hist.min_valley_depth
             )
 
             if best_score is None or key < best_score:

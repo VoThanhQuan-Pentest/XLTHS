@@ -1,22 +1,24 @@
 {
   "models": {
     "histogram": {
-      "frame_ms": 30,
+      "frame_ms": 20,
       "hop_ms": 10,
       "minimum_silence_ms": 200,
       "histogram": {
         "bins": 128,
         "smooth": 1,
-        "weight": 10
+        "weight": 10,
+        "min_peak_distance": 6,
+        "min_valley_depth": 0.2
       },
-      "histogram_fallback": 0.04794034090909091
+      "histogram_fallback": 0.009588068181818182
     }
   },
   "validation": {
     "histogram": {
-      "balanced_error": 0.0408535036,
-      "boundary_misses": 4,
-      "mean_mae_ms": 23.75000000000005
+      "balanced_error": 0.0261879527,
+      "boundary_misses": 2,
+      "mean_mae_ms": 17.500000000000036
     }
   }
 }
