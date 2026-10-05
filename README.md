@@ -13,7 +13,8 @@
 ```text
 XLTHS/
 ├── 03-Phân đoạn tín hiệu thành tiếng nói và khoảng lặng/
-│   └── 3 notebook .ipynb đã chạy và lưu kết quả
+│   ├── 3 notebook .ipynb đã chạy và lưu kết quả
+│   └── Slide_Chung_Nhom03.pdf
 ├── TT1_BinarySearch/
 │   ├── main.py, algorithm.py, __init__.py
 │   ├── BAO_CAO_BINARY_SEARCH.md
@@ -29,6 +30,7 @@ XLTHS/
 ├── TinHieuKiemThu/           # 4 WAV và LAB tương ứng
 ├── tests/                   # Khung, thuật toán, metric và bảng mục tiêu BT1
 ├── tools/build_submission_notebooks.py
+├── output/slides/            # PPTX chỉnh sửa, lời nói và prompt Canva
 ├── main.py                  # Chạy chọn thuật toán hoặc so sánh nhóm
 ├── requirements.txt
 ├── requirements-notebooks.txt
@@ -100,8 +102,19 @@ Chỉ nộp thư mục **03-Phân đoạn tín hiệu thành tiếng nói và kh
 Ba notebook tự chứa mã của từng sinh viên, có sẵn số liệu, bốn đồ thị và bình luận;
 xem kết quả không cần WAV. Chạy lại cần dữ liệu ngoài bộ nộp và chỉnh `DATA_ROOT`.
 
-**Chưa có PDF slide chung; sẽ bổ sung khi làm slide. Không nộp toàn bộ repo hoặc
-chép WAV/LAB vào thư mục nộp.** Nhóm ba người cần bảng so sánh thuật toán trong slide.
+PDF slide chung đã có: **Slide_Chung_Nhom03.pdf**, 19 trang tiếng Anh, gồm ba quy
+trình thuật toán, đủ bốn TEST của mỗi người và bảng so sánh MAE chung. Hình lấy từ
+các PNG kết quả hiện hành; phóng vùng waveform, STE và F0, giữ nguyên dữ liệu.
+**Không nộp toàn bộ repo hoặc chép WAV/LAB vào thư mục nộp.**
+
+Bản có thể chỉnh sửa và tài liệu hỗ trợ nằm ngoài thư mục nộp:
+
+- `output/slides/Group03_Speech_Silence_FINAL_v2.pptx`: text, sơ đồ và bảng so sánh chỉnh sửa được.
+- `output/slides/Speaker_Notes_Nhom03.md`: lời nói ngắn bằng tiếng Anh, mỗi người dưới 3 phút dự kiến.
+- `output/slides/Canva_Prompt_Nhom03.txt`: prompt theo đúng tham số, hình và số liệu của nhóm.
+
+Phân công slide: Võ Thanh Quân 1–7, Vương Quốc Trung 8–12, Đinh Huỳnh Nguyên Khang
+13–19. Ghi chú nói cũng có trong PPTX; phần dẫn nguồn chỉ để tham khảo, không đọc khi trình bày.
 
 Tạo lại notebook từ mã Python:
 

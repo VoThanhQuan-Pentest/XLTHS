@@ -1,0 +1,85 @@
+Create an English, 16:9 presentation for Group 03's university DSP midterm.
+Topic: Speech and silence segmentation.
+
+Use a new visual style: warm off-white backgrounds, dark navy text, teal emphasis, and Lato typography. Use a minimal dark navy cover and closing slide. Keep flat layouts and generous spacing. Keep every main text line under 10 words and at most 7 main text lines per slide. Use fonts of at least 18 pt. Make all charts large and readable.
+
+Use only the supplied NEW result PNGs from TT1_BinarySearch/ket_qua, TT2_Histogram/ket_qua and TT3_Statistics/ket_qua. Preserve the plotted data. Crop and enlarge the waveform, normalized STE and F0 areas. Keep the complete time range. Red lines are LAB boundaries and blue lines are predictions. The dashed F0 line is the LAB mean, not a reference F0 trajectory.
+
+Create exactly 19 slides:
+1. Cover and roster.
+2. Shared experiment settings.
+3. Binary Search workflow.
+4-7. Binary results: phone_F2, phone_M2, studio_F2, studio_M2.
+8. Histogram workflow.
+9-12. Histogram results in the same file order.
+13. Gaussian Statistics workflow.
+14-17. Statistics results in the same file order.
+18. An editable comparison table.
+19. Thank you.
+
+Roster, with exact names:
+Võ Thanh Quân: Binary Search.
+Vương Quốc Trung: Histogram.
+Đinh Huỳnh Nguyên Khang: Statistics.
+
+Shared settings:
+Four TRAIN WAVs and four separate TEST WAVs.
+25 ms windows centered on 10 ms decision cells.
+Normalize STE separately for each WAV.
+Fill all silence shorter than 200 ms, except zero-audio.
+F0 is an independent illustration.
+LAB TEST labels only support evaluation and reference lines.
+
+Binary Search:
+Median follows STE normalization, without renormalizing afterward.
+TRAIN searches median orders 1, 5, 9, 11, 15 and 21.
+Use LAB labels at decision centers, then retain overlap observations.
+Bisect the threshold to balance misclassified energy.
+Rank TRAIN boundary errors first, then MAE.
+Selected median: 15 frames. Shared T: 0.0016054242.
+MAE in file order: 30, 0, 10, 5 ms.
+Boundary errors in file order, start/end:
+phone_F2: 0 / +60 ms.
+phone_M2: 0 / 0 ms.
+studio_F2: -10 / -10 ms.
+studio_M2: +10 / 0 ms.
+
+Histogram:
+Use 128 bins over normalized STE and smoothing over 3 bins.
+Choose the first two local peaks along the energy axis.
+TRAIN searches eight W candidates and selects W=30.
+Compute an adaptive threshold for each TEST WAV.
+Fewer than two peaks: use the mean STE of that WAV.
+TEST thresholds in file order:
+0.0054183468, 0.0061743952, 0.0061743952, 0.0049143145.
+MAE in file order: 10, 5, 15, 15 ms.
+Boundary errors, start/end:
+phone_F2: +10 / -10 ms.
+phone_M2: 0 / -10 ms.
+studio_F2: -10 / -20 ms.
+studio_M2: +20 / -10 ms.
+
+Gaussian Statistics:
+Use labeled, unfiltered normalized STE from all TRAIN WAVs.
+503 silence frames and 794 speech frames.
+Estimate each class mean and population standard deviation.
+Choose a Gaussian density crossing between the means on TRAIN.
+Shared TEST T: 0.0027634166.
+MAE in file order: 5, 5, 15, 10 ms.
+Boundary errors, start/end:
+phone_F2: 0 / +10 ms.
+phone_M2: 0 / -10 ms.
+studio_F2: -10 / -20 ms.
+studio_M2: +10 / -10 ms.
+
+Comparison table, MAE in ms:
+TEST file       Binary    Histogram    Statistics
+phone_F2        30        10           5
+phone_M2        0         5            5
+studio_F2       10        15           15
+studio_M2       5         15           10
+Mean            11.25     11.25        8.75
+
+Every algorithm has zero extra and zero missing boundaries on these four TEST WAVs. Lower MAE applies to this TEST set. Explain any remaining error by its position and a plausible STE interpretation. Avoid claiming an isolated cause without an experiment.
+
+Focus on editable workflow diagrams, result plots, numerical errors and short observations. Keep theory and mathematical formulas out of the slides. Use current calibration on TRAIN, not leave-one-out validation. Keep native text, tables and diagrams editable. Add short speaker notes fitting three minutes per student.
