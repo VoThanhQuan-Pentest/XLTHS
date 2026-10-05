@@ -111,7 +111,7 @@ Bản có thể chỉnh sửa và tài liệu hỗ trợ nằm ngoài thư mục
 
 - `output/slides/Group03_Speech_Silence_FINAL_v2.pptx`: text, sơ đồ và bảng so sánh chỉnh sửa được.
 - `output/slides/Speaker_Notes_Nhom03.md`: lời nói ngắn bằng tiếng Anh, mỗi người dưới 3 phút dự kiến.
-- `output/slides/Canva_Prompt_Nhom03.txt`: prompt theo đúng tham số, hình và số liệu của nhóm.
+- `output/slides/Canva_Prompt_Nhom03.txt`: nội dung chi tiết 19 slide; Canva tự chọn phong cách, người dùng thêm ảnh bằng tay.
 
 Phân công slide: Võ Thanh Quân 1–7, Vương Quốc Trung 8–12, Đinh Huỳnh Nguyên Khang
 13–19. Ghi chú nói cũng có trong PPTX; phần dẫn nguồn chỉ để tham khảo, không đọc khi trình bày.

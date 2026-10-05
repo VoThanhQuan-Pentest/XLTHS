@@ -1,78 +1,338 @@
-Create an English, 16:9 presentation for Group 03's university DSP midterm.
+Create exactly 19 slides in English for a university DSP midterm.
 Topic: Speech and silence segmentation.
+Group: 03.
 
-Use a new visual style: warm off-white backgrounds, dark navy text, teal emphasis, and Lato typography. Use a minimal dark navy cover and closing slide. Keep flat layouts and generous spacing. Keep every main text line under 10 words and at most 7 main text lines per slide. Use fonts of at least 18 pt. Make all charts large and readable.
+DESIGN AND PRESENTATION RULES
 
-Use only the supplied NEW result PNGs from TT1_BinarySearch/ket_qua, TT2_Histogram/ket_qua and TT3_Statistics/ket_qua. Preserve the plotted data. Crop and enlarge the waveform, normalized STE and F0 areas. Keep the complete time range. Red lines are LAB boundaries and blue lines are predictions. The dashed F0 line is the LAB mean, not a reference F0 trajectory.
+Choose the visual style yourself. Select an original, coherent academic design, a suitable color palette, readable fonts and layouts. Prioritize clarity, strong contrast and large visual areas. Do not copy the styling of a reference deck.
 
-Create exactly 19 slides:
-1. Cover and roster.
-2. Shared experiment settings.
-3. Binary Search workflow.
-4-7. Binary results: phone_F2, phone_M2, studio_F2, studio_M2.
-8. Histogram workflow.
-9-12. Histogram results in the same file order.
-13. Gaussian Statistics workflow.
-14-17. Statistics results in the same file order.
-18. An editable comparison table.
-19. Thank you.
+Keep text, workflow diagrams and the comparison table editable. Use fonts of at least 18 pt. Keep each main text line within 10 words and each slide within 7 main text lines. Graph labels and diagram labels must remain readable. Avoid dense paragraphs, theoretical explanations and mathematical formulas. Numerical parameter values are allowed.
 
-Roster, with exact names:
+Use the exact slide order and factual content below. Do not change the names, filenames, thresholds, timestamps or experimental results. Use complete Vietnamese spelling for the member names, while keeping slide content in English.
+
+The user will insert all result images manually. Do not generate graphs, waveforms, histograms, Gaussian curves, F0 trajectories or substitute scientific images. Create empty image placeholders only. Editable process diagrams are required and may use simple shapes and connectors.
+
+Each result slide needs a large plot area with three empty image frames:
+1. Waveform and vertical boundaries.
+2. Normalized STE and its threshold.
+3. F0 and the LAB mean reference.
+
+Label the placeholders temporarily. Put the source filename in the design notes, not the audience-facing slide. The user will crop these three regions from the specified result PNG. Preserve the entire time range and the existing red/blue boundary colors. Remove placeholder labels after inserting images.
+
+Red vertical lines are LAB reference boundaries. Blue vertical lines are detected boundaries. Binary's gray STE is before median filtering; its blue STE is after median filtering. F0 is an independent estimate. The horizontal LAB mean F0 is a scalar reference, not a time-varying ground-truth F0 trajectory.
+
+Use only the on-slide text and workflow labels specified below. Reference facts and speaking guidance belong in notes. Write at most 300 spoken words per student. Read the short observations, not every reference number. Assign slides 1-7 to Võ Thanh Quân, 8-12 to Vương Quốc Trung, and 13-19 to Đinh Huỳnh Nguyên Khang.
+
+GROUP MEMBERS
+
 Võ Thanh Quân: Binary Search.
 Vương Quốc Trung: Histogram.
-Đinh Huỳnh Nguyên Khang: Statistics.
+Đinh Huỳnh Nguyên Khang: Gaussian Statistics.
 
-Shared settings:
-Four TRAIN WAVs and four separate TEST WAVs.
-25 ms windows centered on 10 ms decision cells.
+FACTS FOR ACCURATE SPEAKER NOTES
+
+Training recordings: phone_F1, phone_M1, studio_F1, studio_M1.
+Test recordings: phone_F2, phone_M2, studio_F2, studio_M2.
+All recordings come from the assignment datasets.
+Analysis windows are nominally 25 ms, centered on 10 ms decision cells.
+At recording edges, use actual samples without zero padding for STE.
+Normalize STE by the maximum of each recording separately.
+LAB labels at decision centers define Silence or Speech.
+sil means Silence. Both v and uv mean Speech.
+Fill predicted Silence shorter than 200 ms, including edge intervals.
+All-zero audio stays Silence.
+There is no additional minimum Speech duration of 100 ms.
+TRAIN determines parameters; TEST labels support evaluation and plotting only.
+Parameter selection is calibration on all four TRAIN files, not LOO.
+Rank extra/missing boundaries first, then MAE, then smaller parameters.
+Match boundaries greedily by direction, nearest pairs first, one-to-one.
+MAE uses matched boundaries; always show extra/missing counts.
+All three methods have zero extra/missing boundaries on these TEST files.
+
+SLIDE 1 - COVER
+
+On-slide text:
+Speech and silence
+segmentation
+DSP Midterm, Group 03
+Võ Thanh Quân: Binary Search
+Vương Quốc Trung: Histogram
+Đinh Huỳnh Nguyên Khang: Gaussian Statistics
+
+Use a clear title hierarchy and a concise roster. Leave the design style to Canva. No image is required.
+
+Speaking guidance: Introduce the group and the three assigned algorithms. About 10 seconds.
+
+SLIDE 2 - SHARED EXPERIMENT SETTINGS
+
+On-slide text:
+Shared experiment settings
+4 TRAIN files. 4 separate TEST files.
+25 ms windows centered on 10 ms decisions.
 Normalize STE separately for each WAV.
-Fill all silence shorter than 200 ms, except zero-audio.
-F0 is an independent illustration.
-LAB TEST labels only support evaluation and reference lines.
+Fill silence shorter than 200 ms.
+Red: LAB. Blue: detected boundaries.
+F0: independent illustration.
 
-Binary Search:
-Median follows STE normalization, without renormalizing afterward.
-TRAIN searches median orders 1, 5, 9, 11, 15 and 21.
-Use LAB labels at decision centers, then retain overlap observations.
-Bisect the threshold to balance misclassified energy.
-Rank TRAIN boundary errors first, then MAE.
-Selected median: 15 frames. Shared T: 0.0016054242.
-MAE in file order: 30, 0, 10, 5 ms.
-Boundary errors in file order, start/end:
-phone_F2: 0 / +60 ms.
-phone_M2: 0 / 0 ms.
-studio_F2: -10 / -10 ms.
-studio_M2: +10 / 0 ms.
+Speaking guidance: Explain the common setup, the TRAIN/TEST separation and the color legend. About 25 seconds.
 
-Histogram:
-Use 128 bins over normalized STE and smoothing over 3 bins.
-Choose the first two local peaks along the energy axis.
-TRAIN searches eight W candidates and selects W=30.
-Compute an adaptive threshold for each TEST WAV.
-Fewer than two peaks: use the mean STE of that WAV.
-TEST thresholds in file order:
-0.0054183468, 0.0061743952, 0.0061743952, 0.0049143145.
-MAE in file order: 10, 5, 15, 15 ms.
-Boundary errors, start/end:
-phone_F2: +10 / -10 ms.
-phone_M2: 0 / -10 ms.
-studio_F2: -10 / -20 ms.
-studio_M2: +20 / -10 ms.
+SLIDE 3 - BINARY SEARCH WORKFLOW
 
-Gaussian Statistics:
-Use labeled, unfiltered normalized STE from all TRAIN WAVs.
-503 silence frames and 794 speech frames.
-Estimate each class mean and population standard deviation.
-Choose a Gaussian density crossing between the means on TRAIN.
-Shared TEST T: 0.0027634166.
-MAE in file order: 5, 5, 15, 10 ms.
-Boundary errors, start/end:
-phone_F2: 0 / +10 ms.
-phone_M2: 0 / -10 ms.
-studio_F2: -10 / -20 ms.
-studio_M2: +10 / -10 ms.
+Title: Binary Search
+Presenter: Võ Thanh Quân
 
-Comparison table, MAE in ms:
+Create two horizontal editable workflow lanes with forward connectors. Each lane has three blocks, with at most two text lines per block.
+TRAIN lane:
+Normalize STE / Apply median
+LAB frame labels / Keep overlap
+Bisect threshold / Score TRAIN
+
+TEST lane:
+Same TEST features / Median = 15
+Fixed threshold / Speech or silence
+Fill short silence / Under 200 ms
+
+Parameter line:
+Median = 15. Shared T = 0.0016054242.
+
+Use line breaks within each process block instead of displaying slash characters. Keep the workflow and parameter line readable.
+
+Reference facts for notes: Try median orders 1, 5, 9, 11, 15 and 21 on TRAIN. Apply median after normalization without normalizing again. Keep only observations in the energy overlap before computing mean energy errors. Halve the search interval to balance the energy errors. TRAIN selects median 15. The learned threshold is shared by all TEST recordings. Do not describe a scan of 200 candidate thresholds or a HIGH/LOW method.
+
+Speaking guidance: Explain the TRAIN lane, the selected parameters, then the TEST lane. About 45 seconds.
+
+SLIDE 4 - BINARY SEARCH: PHONE_F2
+
+On-slide text:
+Binary Search: phone_F2
+MAE 30 ms. Extra 0. Missed 0.
+LAB: 1.02 s to 4.04 s.
+Detected: 1.02 s to 4.10 s.
+Start matches. End 60 ms late.
+Tail median STE stays above T.
+Shared T: 0.0016054242.
+
+Manual image source: TT1_BinarySearch/ket_qua/phone_F2.png.
+Leave waveform, STE and F0 image placeholders empty.
+Speaking guidance: Point to the matching onset and the late offset. Explain the tail STE observation without claiming isolated causality. About 20 seconds.
+
+SLIDE 5 - BINARY SEARCH: PHONE_M2
+
+On-slide text:
+Binary Search: phone_M2
+MAE 0 ms. Extra 0. Missed 0.
+LAB: 0.53 s to 2.52 s.
+Detected: 0.53 s to 2.52 s.
+Both boundaries match the LAB timestamps.
+Shared T: 0.0016054242.
+
+Manual image source: TT1_BinarySearch/ket_qua/phone_M2.png.
+Leave waveform, STE and F0 image placeholders empty.
+Speaking guidance: Both detected transitions match LAB. This file has zero matched-boundary MAE. About 20 seconds.
+
+SLIDE 6 - BINARY SEARCH: STUDIO_F2
+
+On-slide text:
+Binary Search: studio_F2
+MAE 10 ms. Extra 0. Missed 0.
+LAB: 0.77 s to 2.37 s.
+Detected: 0.76 s to 2.36 s.
+Start 10 ms early. End 10 ms early.
+Energy crosses T before the LAB transitions.
+Shared T: 0.0016054242.
+
+Manual image source: TT1_BinarySearch/ket_qua/studio_F2.png.
+Leave waveform, STE and F0 image placeholders empty.
+Speaking guidance: Both predicted boundaries are early by one decision step. Interpret the threshold crossings without attributing all error to one processing stage. About 20 seconds.
+
+SLIDE 7 - BINARY SEARCH: STUDIO_M2
+
+On-slide text:
+Binary Search: studio_M2
+MAE 5 ms. Extra 0. Missed 0.
+LAB: 0.45 s to 1.93 s.
+Detected: 0.46 s to 1.93 s.
+Start 10 ms late. End matches.
+Possible cause: weak energy near the onset.
+Shared T: 0.0016054242.
+
+Manual image source: TT1_BinarySearch/ket_qua/studio_M2.png.
+Leave waveform, STE and F0 image placeholders empty.
+Speaking guidance: The onset is late while the offset matches. The average of those two absolute errors is 5 ms. About 20 seconds.
+
+SLIDE 8 - HISTOGRAM WORKFLOW
+
+Title: Histogram
+Presenter: Vương Quốc Trung
+
+Create two horizontal editable workflow lanes. Each lane has three blocks, with at most two text lines per block.
+TRAIN lane:
+TRAIN histograms / 128 bins
+Try W candidates / Eight values
+Score TRAIN boundaries / Errors, then MAE
+
+TEST lane:
+TEST histogram / Normalized STE
+First two peaks / Adaptive threshold
+Classify and merge / Silence under 200 ms
+
+Parameter line:
+Selected W = 30. Smooth over 3 bins.
+
+Reference facts for notes: W candidates are 1, 2, 5, 10, 15, 20, 30 and 50. Use 128 bins over normalized STE and a 3-bin moving average. Choose the first two local maxima along the energy axis, rather than the two tallest peaks. Weight their locations toward the first peak. W is selected on TRAIN, while T adapts to each TEST recording. Fewer than two peaks: use the mean normalized STE of that recording. There is one energy threshold per recording, without an added HIGH/LOW hysteresis layer.
+
+Speaking guidance: Clearly distinguish learning W on TRAIN from calculating T on each TEST WAV. About 45 seconds.
+
+SLIDE 9 - HISTOGRAM: PHONE_F2
+
+On-slide text:
+Histogram: phone_F2
+MAE 10 ms. Extra 0. Missed 0.
+LAB: 1.02 s to 4.04 s.
+Detected: 1.03 s to 4.03 s.
+Start 10 ms late. End 10 ms early.
+Possible cause: weak energy near both boundaries.
+Adaptive T: 0.0054183468.
+
+Manual image source: TT2_Histogram/ket_qua/phone_F2.png.
+Leave waveform, STE and F0 image placeholders empty.
+Speaking guidance: The detected region is slightly shorter than LAB at both ends. No internal false-silence region remains. About 25 seconds.
+
+SLIDE 10 - HISTOGRAM: PHONE_M2
+
+On-slide text:
+Histogram: phone_M2
+MAE 5 ms. Extra 0. Missed 0.
+LAB: 0.53 s to 2.52 s.
+Detected: 0.53 s to 2.51 s.
+Start matches. End 10 ms early.
+Possible cause: weak energy near the tail.
+Adaptive T: 0.0061743952.
+
+Manual image source: TT2_Histogram/ket_qua/phone_M2.png.
+Leave waveform, STE and F0 image placeholders empty.
+Speaking guidance: Point out the matching onset and the slightly early offset. About 25 seconds.
+
+SLIDE 11 - HISTOGRAM: STUDIO_F2
+
+On-slide text:
+Histogram: studio_F2
+MAE 15 ms. Extra 0. Missed 0.
+LAB: 0.77 s to 2.37 s.
+Detected: 0.76 s to 2.35 s.
+Start 10 ms early. End 20 ms early.
+Onset window includes speech. Tail falls below T.
+Adaptive T: 0.0061743952.
+
+Manual image source: TT2_Histogram/ket_qua/studio_F2.png.
+Leave waveform, STE and F0 image placeholders empty.
+Speaking guidance: A centered onset window can include speech before the LAB timestamp. Tail energy falls below T before the reference offset. These are plot-based interpretations. About 25 seconds.
+
+SLIDE 12 - HISTOGRAM: STUDIO_M2
+
+On-slide text:
+Histogram: studio_M2
+MAE 15 ms. Extra 0. Missed 0.
+LAB: 0.45 s to 1.93 s.
+Detected: 0.47 s to 1.92 s.
+Start 20 ms late. End 10 ms early.
+Possible cause: weak energy near both boundaries.
+Adaptive T: 0.0049143145.
+
+Manual image source: TT2_Histogram/ket_qua/studio_M2.png.
+Leave waveform, STE and F0 image placeholders empty.
+Speaking guidance: This recording has a lower adaptive threshold than the previous two, but still has onset and offset errors. About 25 seconds.
+
+SLIDE 13 - GAUSSIAN STATISTICS WORKFLOW
+
+Title: Gaussian Statistics
+Presenter: Đinh Huỳnh Nguyên Khang
+
+Create two horizontal editable workflow lanes. Each lane has three blocks, with at most two text lines per block.
+TRAIN lane:
+TRAIN STE / Normalize each WAV
+LAB classes / Silence and speech
+Mean and std / Gaussian crossing
+
+TEST lane:
+Normalized TEST STE / Same 25 ms windows
+Fixed TEST threshold / Shared across WAVs
+Classify and merge / Silence under 200 ms
+
+Parameter line:
+503 silence, 794 speech. T = 0.0027634166.
+
+Reference facts for notes: Use unfiltered normalized STE. The 503 silence frames and 794 speech frames come from LAB labels at decision centers. Estimate class means and population standard deviations. On TRAIN, choose a Gaussian density crossing between the class means. Apply the shared threshold on every TEST WAV. Do not teach Gaussian theory or show density equations.
+
+Speaking guidance: Explain the labeled classes, the statistics and the shared threshold. About 40 seconds.
+
+SLIDE 14 - STATISTICS: PHONE_F2
+
+On-slide text:
+Statistics: phone_F2
+MAE 5 ms. Extra 0. Missed 0.
+LAB: 1.02 s to 4.04 s.
+Detected: 1.02 s to 4.05 s.
+Start matches. End 10 ms late.
+Tail STE stays above the shared T.
+Shared T: 0.0027634166.
+
+Manual image source: TT3_Statistics/ket_qua/phone_F2.png.
+Leave waveform, STE and F0 image placeholders empty.
+Speaking guidance: Statistics has a smaller tail error than Binary on this recording. About 20 seconds.
+
+SLIDE 15 - STATISTICS: PHONE_M2
+
+On-slide text:
+Statistics: phone_M2
+MAE 5 ms. Extra 0. Missed 0.
+LAB: 0.53 s to 2.52 s.
+Detected: 0.53 s to 2.51 s.
+Start matches. End 10 ms early.
+Possible cause: weak energy near the tail.
+Shared T: 0.0027634166.
+
+Manual image source: TT3_Statistics/ket_qua/phone_M2.png.
+Leave waveform, STE and F0 image placeholders empty.
+Speaking guidance: Its boundary timestamps equal Histogram's on this file, even though the threshold is learned differently. About 20 seconds.
+
+SLIDE 16 - STATISTICS: STUDIO_F2
+
+On-slide text:
+Statistics: studio_F2
+MAE 15 ms. Extra 0. Missed 0.
+LAB: 0.77 s to 2.37 s.
+Detected: 0.76 s to 2.35 s.
+Start 10 ms early. End 20 ms early.
+Onset window includes speech. Tail falls below T.
+Shared T: 0.0027634166.
+
+Manual image source: TT3_Statistics/ket_qua/studio_F2.png.
+Leave waveform, STE and F0 image placeholders empty.
+Speaking guidance: This file again has the same timestamps as Histogram. The same window layout and different thresholds can produce the same discrete decisions. About 20 seconds.
+
+SLIDE 17 - STATISTICS: STUDIO_M2
+
+On-slide text:
+Statistics: studio_M2
+MAE 10 ms. Extra 0. Missed 0.
+LAB: 0.45 s to 1.93 s.
+Detected: 0.46 s to 1.92 s.
+Start 10 ms late. End 10 ms early.
+Possible cause: weak energy near both boundaries.
+Shared T: 0.0027634166.
+
+Manual image source: TT3_Statistics/ket_qua/studio_M2.png.
+Leave waveform, STE and F0 image placeholders empty.
+Speaking guidance: The predicted speech region is shorter than LAB at both ends. About 20 seconds.
+
+SLIDE 18 - EXPERIMENTAL COMPARISON
+
+Title:
+Statistics has the lowest mean TEST MAE (ms)
+
+Create a native editable table with exactly these values:
+
 TEST file       Binary    Histogram    Statistics
 phone_F2        30        10           5
 phone_M2        0         5            5
@@ -80,6 +340,31 @@ studio_F2       10        15           15
 studio_M2       5         15           10
 Mean            11.25     11.25        8.75
 
-Every algorithm has zero extra and zero missing boundaries on these four TEST WAVs. Lower MAE applies to this TEST set. Explain any remaining error by its position and a plausible STE interpretation. Avoid claiming an isolated cause without an experiment.
+Make the table large. Emphasize the Mean row. Keep the unit in the title. Do not add another chart or image.
 
-Focus on editable workflow diagrams, result plots, numerical errors and short observations. Keep theory and mathematical formulas out of the slides. Use current calibration on TRAIN, not leave-one-out validation. Keep native text, tables and diagrams editable. Add short speaker notes fitting three minutes per student.
+Speaking guidance: Statistics has the lowest average MAE on these four files. Binary is better on three individual files, but its larger phone_F2 error increases its average. All three methods have zero extra and zero missing boundaries. This result applies to this TEST set. About 30 seconds.
+
+SLIDE 19 - CLOSING
+
+On-slide text:
+Thank you
+Group 03
+Võ Thanh Quân
+Vương Quốc Trung
+Đinh Huỳnh Nguyên Khang
+
+Use a simple closing composition consistent with the cover. No image is required.
+Speaking guidance: Thank the lecturer. About 5 seconds.
+
+FINAL CONTENT CHECK
+
+There must be exactly 19 slides.
+All slide text is English except the exact Vietnamese member names.
+Each algorithm has one workflow slide and four TEST result slides.
+Each result slide has empty waveform, STE and F0 image placeholders.
+The user will insert the actual images manually.
+All displayed timestamps, thresholds, MAE values and counts match this brief.
+The comparison table includes all four TEST files and the Mean row.
+Keep theory, mathematical formulas and live code execution out of this deck.
+Do not invent additional experiments or claim universal superiority.
+Choose the styling freely while keeping the text and plots readable.
