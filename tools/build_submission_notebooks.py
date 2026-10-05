@@ -337,7 +337,7 @@ def compare_snapshot(snapshot: dict, folder: str) -> None:
             if abs(float(expected[key]) - actual[key]) > 1e-10:
                 raise ValueError(f"Sai số liệu {folder}/{actual['wav']}/{key}")
     # Đối chiếu cả bảng khảo sát nhiễu; đây là đánh giá sau chạy, không chọn lại tham số.
-    with (ROOT / "ket_qua/demo/all/khao_sat_nhieu.csv").open(encoding="utf-8-sig") as stream:
+    with (ROOT / folder / "ket_qua/khao_sat_nhieu.csv").open(encoding="utf-8-sig") as stream:
         baseline_noise = list(csv.DictReader(stream))
     method = snapshot["rows"][0]["method"]
     for actual in snapshot["noise"]:

@@ -827,7 +827,7 @@ Kết quả lưu tại TT1_BinarySearch/ket_qua. Các file minh chứng:
 - [Kết quả bốn WAV test](ket_qua/ket_qua.csv).
 - [Danh sách biên dự đoán](ket_qua/bien_du_doan.csv).
 - [Bình luận từng figure](ket_qua/binh_luan_tung_hinh.md).
-- [Khảo sát nhiễu của nhóm](../ket_qua/demo/all/khao_sat_nhieu.csv).
+- [Khảo sát nhiễu của Binary Search](ket_qua/khao_sat_nhieu.csv).
 
 Chỉ lưu hình: thêm --no-show. Khảo sát nhiễu cho riêng Binary: thêm --noise. Mỗi lần chạy vẫn chỉ hiển thị bốn figure.
 

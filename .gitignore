@@ -4,5 +4,5 @@ __pycache__/
 .venv-notebooks/
 .ipynb_checkpoints/
 .notebook-build/
-ket_qua/demo_*/
+/ket_qua/
 102240161-VoThanhQuan*
