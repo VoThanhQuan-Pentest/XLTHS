@@ -1,5 +1,8 @@
 __pycache__/
 .pytest_cache/
 *.py[cod]
+.venv-notebooks/
+.ipynb_checkpoints/
+.notebook-build/
 ket_qua/demo_*/
 102240161-VoThanhQuan*

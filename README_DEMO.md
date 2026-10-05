@@ -1,5 +1,7 @@
 # Demo bốn figure
 
+> Yêu cầu nộp mới dùng notebook đã chạy sẵn. Xem `NOTEBOOK_NHOM03.md` và thư mục `03-Phân đoạn tín hiệu thành tiếng nói và khoảng lặng/`. Các điểm chạy .py dưới đây phục vụ phát triển/đối chiếu, không phải bộ mã nguồn nộp cho giảng viên. PDF slide chung sẽ bổ sung sau.
+
 ## Phân khung cố định
 
 Cả ba thuật toán luôn dùng khung danh định **25 ms**, bước dịch **10 ms**, trong training, Cross Validation và test. Cấu hình nằm duy nhất trong `speech_silence/config.py`. Binary/Gaussian chỉ kiểm chứng chéo để báo cáo; Histogram chỉ tối ưu tham số riêng, không thử lại khung 20/25/30 ms. Mô hình lưu từ cấu hình khung khác phải được huấn luyện lại trước khi dự đoán.
