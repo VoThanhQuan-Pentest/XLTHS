@@ -26,6 +26,7 @@ if os.name == "posix" and os.environ.get("DISPLAY"):
     os.environ.setdefault("QT_QPA_PLATFORM", "xcb")
 
 from speech_silence.pipeline import METHODS, METHOD_LABELS, run
+from speech_silence.config import FRAME_MS, HOP_MS
 
 
 def parse_args() -> argparse.Namespace:
@@ -103,6 +104,7 @@ def main() -> None:
     print("=" * 70)
     print(" BÀI TẬP LỚN: PHÂN ĐOẠN TÍN HIỆU THÀNH TIẾNG NÓI VÀ KHOẢNG LẶNG (SPEECH/SILENCE)")
     print(f" Thuật toán: {METHOD_LABELS.get(algorithm, 'Cả ba (so sánh nhóm)')}")
+    print(f" Phân khung cố định: {FRAME_MS} ms; bước dịch: {HOP_MS} ms")
     print(" Huấn luyện: TinHieuHuanLuyen | Kiểm thử: TinHieuKiemThu (4 tệp)")
     print("=" * 70)
 

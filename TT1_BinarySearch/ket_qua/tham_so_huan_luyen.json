@@ -1,17 +1,17 @@
 {
   "models": {
     "binary": {
-      "frame_ms": 30,
+      "frame_ms": 25,
       "hop_ms": 10,
       "minimum_silence_ms": 200,
-      "binary_threshold": 0.0015631333060107458
+      "binary_threshold": 0.0013012665647267243
     }
   },
   "validation": {
     "binary": {
-      "balanced_error": 0.0396188604,
-      "boundary_misses": 1,
-      "mean_mae_ms": 35.00000000000003
+      "balanced_error": 0.0908657481,
+      "boundary_misses": 2,
+      "mean_mae_ms": 20.000000000000004
     }
   }
 }

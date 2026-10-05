@@ -24,6 +24,7 @@ from .data import Record, discover, read_record, speech_at, reference_boundaries
 from .evaluation import score, estimate_snr
 from .features import Features, extract, remove_virtual_silence, predicted_boundaries, segments
 from .demo import plot_demo, figure_comments
+from .config import FRAME_MS, HOP_MS
 
 METHODS = ("binary", "histogram", "statistical")
 METHOD_LABELS = {
@@ -33,12 +34,11 @@ METHOD_LABELS = {
 }
 
 
-def training_arrays(records: list[Record], frame_ms: int) -> tuple[np.ndarray, np.ndarray]:
+def training_arrays(records: list[Record]) -> tuple[np.ndarray, np.ndarray]:
     """Trích xuất và gộp mảng normalized STE của hai lớp Silence và Speech từ tập huấn luyện.
 
     Args:
         records: Danh sách các đối tượng Record của tập huấn luyện.
-        frame_ms: Độ dài khung tính theo mili-giây (ví dụ: 20 ms, 30 ms).
 
     Returns:
         tuple gồm (silence_ste, speech_ste) dưới dạng mảng 1D numpy float.
@@ -49,7 +49,7 @@ def training_arrays(records: list[Record], frame_ms: int) -> tuple[np.ndarray, n
 
     # Khối 2: Duyệt qua từng bản ghi huấn luyện và trích xuất đặc trưng
     for record in records:
-        features = extract(record.samples, record.fs, frame_ms, compute_f0=False)
+        features = extract(record.samples, record.fs, FRAME_MS, HOP_MS, compute_f0=False)
         truth, valid = speech_at(features.times, record.labels)
         # Phân tách khung Silence (valid & ~truth) và Speech (valid & truth)
         silence_values.extend(features.normalized_ste[valid & ~truth])
@@ -58,13 +58,12 @@ def training_arrays(records: list[Record], frame_ms: int) -> tuple[np.ndarray, n
     return np.asarray(silence_values), np.asarray(speech_values)
 
 
-def fit(records: list[Record], frame_ms: int, histogram: HistogramConfig,
+def fit(records: list[Record], histogram: HistogramConfig,
         method: str | None = None) -> dict:
     """Xác định bộ tham số và các ngưỡng phân đoạn tối ưu từ dữ liệu huấn luyện.
 
     Args:
         records: Danh sách Record thuộc tập huấn luyện.
-        frame_ms: Độ dài khung (ms).
         histogram: Cấu hình tham số HistogramConfig.
         method: Thuật toán cần huấn luyện; None huấn luyện cả ba.
 
@@ -72,14 +71,14 @@ def fit(records: list[Record], frame_ms: int, histogram: HistogramConfig,
         Từ điển chứa bộ mô hình huấn luyện (ngưỡng nhị phân, ngưỡng Gaussian, ngưỡng dự phòng).
     """
     # Khối 1: Trích xuất mảng năng lượng hai lớp từ tập huấn luyện
-    sil, sp = training_arrays(records, frame_ms)
+    sil, sp = training_arrays(records)
     if not len(sil) or not len(sp):
         raise ValueError("Dữ liệu huấn luyện thiếu một trong hai lớp Speech hoặc Silence")
 
     # Khối 2: Đóng gói cấu hình chung, chỉ tính thuật toán đang được chọn để demo.
     model = {
-        "frame_ms": frame_ms,
-        "hop_ms": 10,
+        "frame_ms": FRAME_MS,
+        "hop_ms": HOP_MS,
         "minimum_silence_ms": 200,
     }
     if method is None or method == "binary":
@@ -119,6 +118,11 @@ def predict(samples: np.ndarray, fs: int, model: dict, method: str,
     if method not in METHODS:
         raise ValueError(f"Thuật toán không hợp lệ: {method}")
 
+    # Mô hình cũ có thể chứa ngưỡng học ở 20/30 ms, không tương thích đặc trưng mới.
+    if model.get("frame_ms") != FRAME_MS or model.get("hop_ms") != HOP_MS:
+        raise ValueError(f"Mô hình không dùng khung {FRAME_MS} ms / bước {HOP_MS} ms. "
+                         "Hãy huấn luyện lại bằng main.py trước khi dự đoán.")
+
     features = extract(samples, fs, model["frame_ms"], model["hop_ms"], compute_f0=compute_f0)
     fallback_used = False
 
@@ -143,7 +147,7 @@ def predict(samples: np.ndarray, fs: int, model: dict, method: str,
 
 
 def choose(records: list[Record], only: str | None = None) -> tuple[dict, dict]:
-    """Tìm kiếm siêu tham số tối ưu (frame_ms, cấu hình histogram) bằng phương pháp Cross-Validation.
+    """Đánh giá ở khung cố định 25/10 ms; chỉ Histogram tìm siêu tham số bằng Cross-Validation.
 
     Args:
         records: Danh sách các Record trong tập huấn luyện.
@@ -152,12 +156,11 @@ def choose(records: list[Record], only: str | None = None) -> tuple[dict, dict]:
     Returns:
         tuple gồm (models, validation_metrics) chỉ cho thuật toán được chọn, hoặc cả ba khi only=None.
     """
-    # Khối 1: Định nghĩa không gian tìm kiếm siêu tham số
+    # Khối 1: Khung/bước dịch là cấu hình cố định, không có trong không gian tìm kiếm.
     configs = {
-        "binary": [(f, HistogramConfig()) for f in (20, 25, 30)],
-        "statistical": [(f, HistogramConfig()) for f in (20, 25, 30)],
-        "histogram": [(f, HistogramConfig(b, s, w, distance, depth))
-                      for f in (20, 25, 30)
+        "binary": [HistogramConfig()],
+        "statistical": [HistogramConfig()],
+        "histogram": [HistogramConfig(b, s, w, distance, depth)
                       for b in (32, 64, 128)
                       for s in (1, 3, 5)
                       for w in (2, 5, 10)
@@ -166,7 +169,7 @@ def choose(records: list[Record], only: str | None = None) -> tuple[dict, dict]:
     }
 
     # Lưu ứng viên tốt nhất riêng cho từng thuật toán, không dùng dữ liệu kiểm thử.
-    selected: dict[str, tuple[int, HistogramConfig]] = {}
+    selected: dict[str, HistogramConfig] = {}
     validation: dict[str, dict] = {}
 
     # Khối 2: Đánh giá Leave-One-Out trên từng ứng viên tham số
@@ -174,12 +177,12 @@ def choose(records: list[Record], only: str | None = None) -> tuple[dict, dict]:
     for method in methods:
         candidates = configs[method]
         best_score = None
-        for frame_ms, hist in candidates:
+        for hist in candidates:
             scores = []
             for held_idx in range(len(records)):
                 train_subset = [r for i, r in enumerate(records) if i != held_idx]
                 val_record = records[held_idx]
-                fitted_model = fit(train_subset, frame_ms, hist, method=method)
+                fitted_model = fit(train_subset, hist, method=method)
                 feat, msk, _, _ = predict(val_record.samples, val_record.fs, fitted_model, method, compute_f0=False)
                 scores.append(score(val_record, feat, msk))
 
@@ -188,12 +191,12 @@ def choose(records: list[Record], only: str | None = None) -> tuple[dict, dict]:
                 round(float(np.mean([s["balanced_error"] for s in scores])), 10),
                 sum(s["missed"] + s["extra"] for s in scores),
                 np.mean([s["mae_ms"] if s["mae_ms"] is not None else 200 for s in scores]),
-                frame_ms, hist.bins, hist.smooth, hist.weight, hist.min_peak_distance, hist.min_valley_depth
+                hist.bins, hist.smooth, hist.weight, hist.min_peak_distance, hist.min_valley_depth
             )
 
             if best_score is None or key < best_score:
                 best_score = key
-                selected[method] = (frame_ms, hist)
+                selected[method] = hist
                 validation[method] = {
                     "balanced_error": key[0],
                     "boundary_misses": key[1],
@@ -201,7 +204,7 @@ def choose(records: list[Record], only: str | None = None) -> tuple[dict, dict]:
                 }
 
     # Khối 3: Huấn luyện lại trên toàn bộ tập dữ liệu huấn luyện với tham số tốt nhất
-    models = {method: fit(records, *selected[method], method=method) for method in methods}
+    models = {method: fit(records, selected[method], method=method) for method in methods}
     return models, validation
 
 
@@ -454,8 +457,7 @@ def plot_distributions(records: list[Record], models: dict, path: Path) -> None:
         None. Lưu phân bố training trong path (hàm hỗ trợ, không gọi trong demo).
     """
     # Khối 1: Lấy mẫu năng lượng và khởi tạo đồ thị
-    frame_ms = models["statistical"]["frame_ms"]
-    sil, sp = training_arrays(records, frame_ms)
+    sil, sp = training_arrays(records)
     fig, axis = plt.subplots(figsize=(10, 5), layout="constrained")
     bins = np.linspace(0, 1, 101)
 

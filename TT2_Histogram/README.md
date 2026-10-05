@@ -1,5 +1,7 @@
 # Thành viên 2: Histogram
 
+Phân khung cố định 25 ms, bước dịch 10 ms cho cả training và test. Cross Validation chỉ chọn số bin, mức làm trơn, trọng số, khoảng cách đỉnh và độ sâu valley.
+
 Bấm Run ở `main.py` trong thư mục này, hoặc chạy từ thư mục gốc:
 
 ```bash

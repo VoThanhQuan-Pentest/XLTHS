@@ -1,5 +1,7 @@
 # Thành viên 1: Binary Search
 
+Phân khung cố định 25 ms, bước dịch 10 ms cho cả training và test. Ngưỡng được học lại từ training với cấu hình này; không còn chọn độ dài khung bằng Cross Validation.
+
 [Báo cáo đầy đủ](BAO_CAO_BINARY_SEARCH.md) có công thức, ký hiệu tương ứng với mã, ví dụ tính STE/LAB/Binary Search, hình và kết quả của cả bốn WAV test.
 
 Bấm Run ở `main.py` trong thư mục này, hoặc chạy từ thư mục gốc:

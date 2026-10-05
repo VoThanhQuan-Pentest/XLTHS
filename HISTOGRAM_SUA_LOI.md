@@ -1,5 +1,7 @@
 # Sửa quy tắc chọn đỉnh Histogram
 
+> Báo cáo lịch sử của lần sửa Histogram trước khi cố định phân khung. Các số liệu khung 20 ms bên dưới phản ánh đúng lần sửa đó, không phải cấu hình hiện hành. Hiện cả ba phương pháp dùng 25 ms / 10 ms; xem JSON/CSV mới trong `TT2_Histogram/ket_qua/` và bảng tổng hợp `THAY_DOI_PHAN_KHUNG_25MS.md`.
+
 ## Thay đổi
 
 - Xét đỉnh ở bin 0 và bin cuối; mỗi plateau dương chỉ tạo một đỉnh.

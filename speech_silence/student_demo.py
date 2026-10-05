@@ -10,6 +10,7 @@ if os.name == "posix" and os.environ.get("DISPLAY"):
     os.environ.setdefault("QT_QPA_PLATFORM", "xcb")
 
 from .pipeline import METHOD_LABELS, run
+from .config import FRAME_MS, HOP_MS
 
 
 def run_student(method: str, directory: Path) -> None:
@@ -40,6 +41,7 @@ def run_student(method: str, directory: Path) -> None:
 
     # Khối 3: Chỉ huấn luyện và chạy phương pháp của sinh viên, không hiện menu.
     print(f"DEMO RIÊNG: {METHOD_LABELS[method]}")
+    print(f"Phân khung cố định: {FRAME_MS} ms; bước dịch: {HOP_MS} ms")
     print("Một lần chạy: bốn WAV test, bốn figure, một thuật toán.")
     print(f"Mã thuật toán: {directory / 'algorithm.py'}")
     run(root=args.root.resolve(), output=args.output.resolve(), only=method,

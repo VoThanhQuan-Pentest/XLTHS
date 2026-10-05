@@ -7,6 +7,7 @@ import numpy as np
 
 from .data import Record, reference_boundaries, speech_at
 from .features import Features, predicted_boundaries, segments
+from .config import FRAME_MS, HOP_MS
 
 
 def format_metric(value: float | None) -> str:
@@ -67,8 +68,8 @@ def plot_demo(record: Record, results: dict, labels: dict, path: Path, number: i
         axis.text(0.98, 0.95, f'T={result["threshold"]:.5f}', transform=axis.transAxes,
                   ha="right", va="top", fontsize=7)
 
-    # Khối 6: Log và F0 dùng khung của phương pháp đầu tiên, ghi rõ độ dài khung.
-    frame_ms = (first.times[0] * 2) * 1000
+    # Khối 6: Cả ba phương pháp cùng khung danh định; tránh suy ngược từ khung cuối ngắn.
+    frame_ms = FRAME_MS
     logaxis.plot(first.times, first.log_ste, color="#6f42a2", lw=0.8, label="logSTE")
     logaxis.plot(first.times, first.log_ma, color="#009e73", lw=0.8, label="logMA")
     logaxis.set(title=f"Đặc trưng log ({frame_ms:.0f} ms)", ylabel="Mức (dB)")
@@ -96,6 +97,7 @@ def figure_comments(record: Record, results: dict, labels: dict) -> list[str]:
     """Nhận bản ghi/kết quả/tên phương pháp; trả các dòng Markdown bình luận một figure."""
     # Khối 1: Gắn bình luận với đúng WAV và PNG, mô tả các panel chung.
     lines = [f"## {record.name}.png", "",
+             f"Phân khung cố định {FRAME_MS} ms, bước dịch {HOP_MS} ms.",
              "Hình gồm waveform, normalized STE/ngưỡng/biên của từng phương pháp, logSTE/logMA và F0.",
              "Đường xanh là biên dự đoán, đường đỏ nét đứt là biên chuẩn. Các chỉ số tính bằng ms.", ""]
     for method, result in results.items():

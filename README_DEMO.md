@@ -1,5 +1,11 @@
 # Demo bốn figure
 
+## Phân khung cố định
+
+Cả ba thuật toán luôn dùng khung danh định **25 ms**, bước dịch **10 ms**, trong training, Cross Validation và test. Cấu hình nằm duy nhất trong `speech_silence/config.py`. Binary/Gaussian chỉ kiểm chứng chéo để báo cáo; Histogram chỉ tối ưu tham số riêng, không thử lại khung 20/25/30 ms. Mô hình lưu từ cấu hình khung khác phải được huấn luyện lại trước khi dự đoán.
+
+Quy đổi bằng `round` như trước: 400 mẫu ở 16 kHz, 1102 mẫu ở 44,1 kHz. Bước dịch tương ứng 160/441 mẫu. Khung 44,1 kHz có độ dài thực khoảng 24,989 ms do không thể dùng nửa mẫu; cả ba thuật toán sử dụng cùng quy tắc này.
+
 ## Thư mục riêng cho từng thành viên
 
 | Thành viên | Thư mục | File bấm Run | Mã thuật toán |
@@ -39,3 +45,5 @@ Binary Search và Gaussian gom STE có nhãn của bốn WAV training để họ
 Histogram xét cả đỉnh bin 0, gom plateau thành một đỉnh và giới hạn đỉnh nền trong vùng chứa 20% giá trị năng lượng thấp nhất. Đỉnh cao phải đủ xa đỉnh nền và có valley đủ sâu. Khoảng cách tối thiểu và độ sâu valley được chọn bằng kiểm chứng chéo training cùng số bin, mức trơn và trọng số. Các quy tắc này dựa trên giả định nền có năng lượng thấp; không đảm bảo hai đỉnh là hai lớp thuần nhất khi nhiễu/Speech chồng lấn.
 
 Bình luận từng hình gồm vị trí biên chuẩn/dự đoán, độ lệch ms, số biên ghép/thừa/thiếu, nhận xét lỗi và nguyên nhân khả dĩ từ STE. “Biên ghép” không đồng nghĩa biên chính xác: MAE/RMSE biểu thị sai lệch thực tế, không áp dụng dung sai 200 ms. Quy tắc 200 ms chỉ loại Silence ảo. F0mean trong LAB là thống kê tham chiếu, không phải đường F0 chuẩn theo thời gian.
+
+Các đầu ra trực tiếp tại `ket_qua/` và `ket_qua/demo/` (không nằm trong thư mục tên thuật toán) là lịch sử trước khi cố định khung. Dùng kết quả hiện hành trong ba thư mục thành viên hoặc `ket_qua/demo/{binary,histogram,statistical,all}/`.

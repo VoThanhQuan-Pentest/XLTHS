@@ -1,7 +1,7 @@
 # BÁO CÁO THUẬT TOÁN BINARY SEARCH
 ## Phân đoạn tín hiệu thu âm thành Speech và Silence
 
-Báo cáo mô tả thuật toán đang được thực hiện trong thư mục TT1_BinarySearch, cùng số liệu thực nghiệm của chương trình hiện tại. Phần công thức phục vụ việc hiểu mã và viết báo cáo. Khi trình bày slide 3 phút, chỉ chọn sơ đồ các bước, hình kết quả và nhận xét theo yêu cầu của giảng viên.
+Báo cáo mô tả thuật toán trong TT1_BinarySearch với phân khung cố định 25 ms / 10 ms, cùng số liệu đã chạy lại ở cấu hình này. Phần công thức phục vụ việc hiểu mã và viết báo cáo. Khi trình bày slide 3 phút, chỉ chọn sơ đồ các bước, hình kết quả và nhận xét theo yêu cầu của giảng viên.
 
 Quy ước: các số thập phân trong công thức và mã dùng dấu chấm như Python. Thời gian LAB tính bằng giây; sai số biên tính bằng mili-giây.
 
@@ -29,7 +29,7 @@ Các tệp WAV và LAB được ghép tự động theo cùng tên gốc.
 
 | Tập | Các WAV | Vai trò |
 |---|---|---|
-| Training | phone_F1, phone_M1, studio_F1, studio_M1 | Chọn độ dài khung và học ngưỡng |
+| Training | phone_F1, phone_M1, studio_F1, studio_M1 | Học ngưỡng và kiểm chứng ở khung cố định |
 | Test | phone_F2, phone_M2, studio_F2, studio_M2 | Đánh giá sau khi khóa tham số |
 
 Tất cả WAV hiện có đều mono PCM 16-bit. Các bản ghi phone có tần số lấy mẫu 16.000 Hz; studio có tần số lấy mẫu 44.100 Hz.
@@ -131,14 +131,14 @@ padded = np.pad(samples, (0, frame_len))
 frames = np.lib.stride_tricks.sliding_window_view(padded, frame_len)[starts]
 ~~~
 
-Cấu hình Binary Search được chọn là khung 30 ms, bước dịch 10 ms:
+Cấu hình chung được cố định trong ../speech_silence/config.py: khung 25 ms, bước dịch 10 ms:
 
 | Tần số lấy mẫu | Số mẫu/khung N | Bước dịch H |
 |---:|---:|---:|
-| 16.000 Hz | 480 | 160 |
-| 44.100 Hz | 1323 | 441 |
+| 16.000 Hz | 400 | 160 |
+| 44.100 Hz | 1102 | 441 |
 
-Các khung chồng lấn khoảng 20 ms. Khung cuối được đệm zero; STE vẫn chia cho N, kể cả khi số mẫu có thật ở cuối WAV ít hơn N.
+Các khung chồng lấn khoảng 15 ms. Ở 44,1 kHz, round(1102.5) = 1102 nên khung thực dài khoảng 24,989 ms; đây là làm tròn về số mẫu nguyên, cả ba phương pháp dùng cùng quy tắc. Khung cuối được đệm zero; STE vẫn chia cho N, kể cả khi số mẫu có thật ở cuối WAV ít hơn N.
 
 ## 6. Bước 3: Tính STE, MA và chuẩn hóa STE
 
@@ -333,8 +333,8 @@ $$
 Với dữ liệu thực tế:
 
 $$
-lo=0.00005807669266798009,\qquad
-hi=0.01533968664493012.
+lo=0.00005423969907103939,\qquad
+hi=0.011368689197374226.
 $$
 
 Các số này là cận tìm kiếm, không phải hai ngưỡng cuối cùng. Chương trình chỉ học một T.
@@ -438,34 +438,34 @@ Các bước đầu trên bốn WAV training:
 
 | Vòng | mid | A(mid) | B(mid) | Điều chỉnh |
 |---:|---:|---:|---:|---|
-| 1 | 0.007698882 | 0.000019150 | 0.000833428 | hi = mid |
-| 2 | 0.003878479 | 0.000034401 | 0.000278532 | hi = mid |
-| 3 | 0.001968278 | 0.000047311 | 0.000086993 | hi = mid |
-| 4 | 0.001013177 | 0.000084538 | 0.000022171 | lo = mid |
-| 5 | 0.001490728 | 0.000057945 | 0.000050843 | lo = mid |
-| 6 | 0.001729503 | 0.000051458 | 0.000067833 | hi = mid |
-| 7 | 0.001610115 | 0.000054271 | 0.000058905 | hi = mid |
-| 8 | 0.001550421 | 0.000056039 | 0.000054779 | lo = mid |
-| 9 | 0.001580268 | 0.000055086 | 0.000056815 | hi = mid |
-| 10 | 0.001565345 | 0.000055562 | 0.000055784 | hi = mid |
+| 1 | 0.005711464 | 0.000011292 | 0.000568169 | hi = mid |
+| 2 | 0.002882852 | 0.000021351 | 0.000188785 | hi = mid |
+| 3 | 0.001468546 | 0.000040727 | 0.000058683 | hi = mid |
+| 4 | 0.000761393 | 0.000098192 | 0.000014041 | lo = mid |
+| 5 | 0.001114969 | 0.000055792 | 0.000033158 | lo = mid |
+| 6 | 0.001291758 | 0.000046498 | 0.000045422 | lo = mid |
+| 7 | 0.001380152 | 0.000043303 | 0.000051913 | hi = mid |
+| 8 | 0.001335955 | 0.000044803 | 0.000048640 | hi = mid |
+| 9 | 0.001313856 | 0.000045603 | 0.000047025 | hi = mid |
+| 10 | 0.001302807 | 0.000046045 | 0.000046218 | hi = mid |
 
-Sau 21 vòng, khoảng còn rộng khoảng 7.28684 × 10^-9. Ngưỡng cuối:
+Sau 21 vòng, khoảng còn rộng khoảng 5.39515 × 10^-9. Ngưỡng cuối:
 
 $$
-\boxed{T=0.0015631333060107458}.
+\boxed{T=0.0013012665647267243}.
 $$
 
 Mỗi vòng cần tính trên hai mảng training. Chi phí học ngưỡng trực tiếp xấp xỉ O(m(N_Sil+N_Sp)); bộ nhớ đặc trưng xấp xỉ O(N_Sil+N_Sp).
 
-## 10. Chọn độ dài khung trước khi học ngưỡng cuối
+## 10. Kiểm chứng ở khung cố định và học ngưỡng cuối
 
-Chương trình khảo sát độ dài khung 20, 25 và 30 ms, giữ bước dịch 10 ms. Với mỗi độ dài:
+Cả ba thuật toán luôn dùng khung 25 ms, bước dịch 10 ms. Binary Search không chọn frame bằng Cross Validation nữa. Chương trình vẫn chạy Leave-One-Out trên bốn WAV training để báo cáo khả năng tổng quát:
 
 1. Giữ lại một WAV training để kiểm chứng.
-2. Học ngưỡng từ ba WAV training còn lại.
+2. Học ngưỡng từ ba WAV training còn lại, ở 25/10 ms.
 3. Dự đoán WAV giữ lại và tính lỗi.
-4. Lặp cho cả bốn lần giữ lại một WAV.
-5. So sánh lỗi phân lớp cân bằng trung bình giữa các cấu hình.
+4. Lặp cho cả bốn WAV. Tất cả các lượt đều dùng cùng cấu hình phân khung.
+5. Học lại ngưỡng cuối trên toàn bộ bốn WAV training và khóa trước khi đánh giá test.
 
 Lỗi phân lớp cân bằng:
 
@@ -476,53 +476,53 @@ BER=\frac{1}{2}
 \right).
 $$
 
-FP là số khung Silence bị dự đoán thành Speech; FN là số khung Speech bị dự đoán thành Silence. Ở công thức đánh giá này, N_Sil/N_Sp là số khung có nhãn của bản ghi đang kiểm chứng, không nhất thiết bằng 501/794 của toàn training.
+FP là số khung Silence bị dự đoán thành Speech; FN là số khung Speech bị dự đoán thành Silence. Trong phép đánh giá này, N_Sil/N_Sp là số khung có nhãn của WAV đang kiểm chứng, không nhất thiết bằng 501/794 của toàn training.
 
-Khi hai cấu hình có cùng BER, mã ưu tiên ít biên thừa/thiếu hơn, rồi MAE trung bình nhỏ hơn. Trong bước chọn cấu hình, một lượt không có cặp biên được gán giá trị thay thế 200 ms cho tiêu chí phụ MAE. Đây không phải cửa sổ ghép biên khi đánh giá test và không dùng để loại biên lệch quá 200 ms.
+Kết quả kiểm chứng ở cấu hình cố định: BER trung bình 0.0908657481, hai biên lỗi cộng dồn và MAE trung bình theo lượt 20 ms. Các chỉ số này chỉ báo cáo tại 25 ms, không được dùng để chuyển về khung 20/30 ms. Không có dung sai ±200 ms khi ghép biên.
 
-Cấu hình 30 ms được chọn với BER kiểm chứng chéo khoảng 0.039619, một biên lỗi cộng dồn và MAE trung bình theo lượt 35 ms. Sau đó chương trình học lại ngưỡng trên cả bốn WAV training.
+Mô hình cũ học ở khung khác bị predict từ chối trước khi tính đặc trưng; cần chạy main.py để huấn luyện lại ở 25/10 ms.
 
 ## 11. Ví dụ tính toán thực tế từ phone_F1
 
 ### 11.1. Khung đang xét
 
-Tần số lấy mẫu f_s = 16000 Hz, N = 480, H = 160. Với khung k = 52:
+Tần số lấy mẫu f_s = 16000 Hz, N = 400, H = 160. Với khung k = 52:
 
 $$
 a_{52}=52\times160=8320.
 $$
 
-Khung lấy mẫu từ chỉ số 8320 đến 8799, tương ứng khoảng [0.520,0.550) giây. Tâm khung:
+Khung lấy mẫu từ chỉ số 8320 đến 8719, tương ứng khoảng [0.520,0.545) giây. Tâm khung:
 
 $$
-t_{52}=\frac{8320+480/2}{16000}=0.535\ \mathrm{s}.
+t_{52}=\frac{8320+400/2}{16000}=0.5325\ \mathrm{s}.
 $$
 
 ### 11.2. STE và normalized STE
 
-Từ 480 mẫu thực tế:
+Từ 400 mẫu thực tế:
 
 $$
-\sum_{n=0}^{479}x_{52}[n]^2=0.08194930385798216.
+\sum_{n=0}^{399}x_{52}[n]^2=0.03776868898421526.
 $$
 
 $$
-E_{52}=\frac{0.08194930385798216}{480}
-=0.00017072771637079617.
+E_{52}=\frac{0.03776868898421526}{400}
+=0.00009442172246053815.
 $$
 
 STE lớn nhất của phone_F1.wav:
 
 $$
-E_{\max}=0.11822533506395606.
+E_{\max}=0.12892314322991297.
 $$
 
 Vì vậy:
 
 $$
 e_{52}=
-\frac{0.00017072771637079617}{0.11822533506395606}
-=0.0014440873969901462.
+\frac{0.00009442172246053815}{0.12892314322991297}
+=0.0007323876853681168.
 $$
 
 ### 11.3. LAB và quyết định ban đầu
@@ -534,15 +534,15 @@ Các dòng đầu của phone_F1.lab:
 0.53    1.14    v
 ~~~
 
-Tâm 0.535 s nằm trong [0.53,1.14), nên nhãn training của khung là Speech. Tuy nhiên:
+Tâm 0.5325 s nằm trong [0.53,1.14), nên nhãn training của khung là Speech. Tuy nhiên:
 
 $$
-e_{52}=0.0014440874<T=0.0015631333.
+e_{52}=0.0007323877<T=0.0013012666.
 $$
 
 Do đó quyết định ngưỡng ban đầu xem khung này là Silence. Đây là một khung Speech năng lượng thấp bị nhầm; ngưỡng chung không bảo đảm mọi khung đều đúng.
 
-Khung kế tiếp có tâm 0.545 s, normalized STE khoảng 0.023098, cao hơn T nên được xem là Speech. Hậu xử lý có thể gộp các Silence ngắn bên trong Speech, nhưng vùng Silence đầu bản ghi vốn dài hơn 200 ms vẫn được giữ.
+Khung kế tiếp có tâm 0.5425 s, normalized STE khoảng 0.006526, cao hơn T nên được xem là Speech. Hậu xử lý có thể gộp các Silence ngắn bên trong Speech, nhưng vùng Silence đầu bản ghi vốn dài hơn 200 ms vẫn được giữ.
 
 ## 12. Bước 7: Dự đoán test, hậu xử lý và trích biên
 
@@ -683,37 +683,41 @@ Các biên dự đoán thừa và biên chuẩn thiếu được báo riêng vì
 
 | WAV | Ngưỡng T | MAE | RMSE | Ghép/thừa/thiếu |
 |---|---:|---:|---:|---|
-| phone_F2 | 0.00156313 | 45.0 ms | 57.0 ms | 2 / 1 / 0 |
-| phone_M2 | 0.00156313 | 10.0 ms | 10.0 ms | 2 / 0 / 0 |
-| studio_F2 | 0.00156313 | 20.0 ms | 20.0 ms | 2 / 0 / 0 |
-| studio_M2 | 0.00156313 | 5.0 ms | 7.1 ms | 2 / 0 / 0 |
-| Gộp 8 cặp biên | — | 20.0 ms | 30.8 ms | 8 / 1 / 0 |
+| phone_F2 | 0.00130127 | 50.0 ms | 64.0 ms | 2 / 3 / 0 |
+| phone_M2 | 0.00130127 | 10.0 ms | 10.0 ms | 2 / 0 / 0 |
+| studio_F2 | 0.00130127 | 15.0 ms | 15.8 ms | 2 / 0 / 0 |
+| studio_M2 | 0.00130127 | 5.0 ms | 7.1 ms | 2 / 0 / 0 |
+| Gộp 8 cặp biên | — | 20.0 ms | 33.5 ms | 8 / 3 / 0 |
 
 Cả bốn bản ghi hiện tại có một vùng Speech sau khi gộp v/uv. Vì mỗi tệp đều ghép được hai biên, MAE trung bình theo tệp bằng MAE gộp. RMSE gộp phải tính từ các sai số bình phương hoặc trọng số số cặp, không lấy trung bình bốn RMSE.
 
-### 14.3. phone_F2: sai lệch rõ và một biên thừa
+### 14.3. phone_F2: sai lệch rõ và ba biên thừa
 
 ![Binary Search trên phone_F2](ket_qua/phone_F2.png)
 
 - Biên bắt đầu chuẩn 1.02 s, dự đoán 1.01 s: sớm 10 ms.
-- Biên kết thúc chuẩn 4.04 s, dự đoán 4.12 s: muộn 80 ms.
-- Tại 4.76 s xuất hiện thêm một chuyển tiếp sang Speech trong vùng Silence chuẩn.
-- MAE = (10 + 80)/2 = 45 ms.
-- RMSE = sqrt((10² + 80²)/2) ≈ 57.0 ms.
+- Biên kết thúc chuẩn 4.04 s, dự đoán 4.13 s: muộn 90 ms.
+- Ba biên thừa tại 0.61 s, 0.63 s và 4.57 s.
+- MAE = (10 + 90)/2 = 50 ms.
+- RMSE = sqrt((10² + 90²)/2) ≈ 64.0 ms.
 
-Đối chiếu mặt nạ trước/sau hậu xử lý xác nhận nguyên nhân ở cuối tệp:
+Ở vùng Silence đầu bản ghi, một đoạn nhiễu 0.61–0.63 s bị nhận thành Speech, tạo hai biên thừa. Tại 0.61 s, e ≈ 0.00159180 vượt T ≈ 0.00130127. Quy tắc 200 ms chỉ gộp Silence ngắn; không loại Speech ngắn 20 ms này.
+
+Đối chiếu trước/sau hậu xử lý ở cuối tệp:
 
 | Khoảng | Phân loại theo ngưỡng | Sau quy tắc 200 ms |
 |---|---|---|
-| 4.12–4.76 s | Silence | Silence |
-| 4.76–4.77 s | Speech | Speech |
-| 4.77–4.80 s | Silence, chỉ 30 ms | Chuyển thành Speech |
+| 4.13–4.57 s | Silence | Silence |
+| 4.57–4.58 s | Speech | Speech |
+| 4.58–4.76 s | Silence, 180 ms | Chuyển thành Speech |
+| 4.76–4.78 s | Speech | Speech |
+| 4.78–4.80 s | Silence, 20 ms | Chuyển thành Speech |
 
-Khung bắt đầu tại 4.76 s có e ≈ 0.00161969, vượt T ≈ 0.00156313. Một khung nhiễu vượt ngưỡng tạo Speech 10 ms; Silence 30 ms phía sau bị gộp, khiến Speech giả kéo đến cuối WAV. Như vậy lỗi này liên quan cả nhiễu nền lẫn chính sách hậu xử lý ở đuôi.
+Khung bắt đầu tại 4.57 s có e ≈ 0.00131194, chỉ cao hơn T một chút. Các khung nhiễu vượt ngưỡng kết hợp việc gộp Silence ngắn tạo Speech giả kéo từ 4.57 s đến cuối WAV. Như vậy lỗi liên quan cả nhiễu nền lẫn chính sách hậu xử lý.
 
-Các Silence ngắn bên trong Speech ở 2.62–2.69 s và 3.55–3.60 s được gộp đúng mục đích, tránh chia tiếng nói thành nhiều đoạn.
+Các Silence ngắn bên trong Speech ở 2.62–2.69 s và 3.56–3.61 s được gộp đúng mục đích, tránh chia tiếng nói thành nhiều đoạn.
 
-F0 trung vị ước lượng 142.9 Hz, gần F0mean LAB 145 Hz. Những đỉnh nhọn và khoảng trống vẫn cần được xem như hạn chế của bộ ước lượng đơn giản.
+F0 trung vị ước lượng 150.9 Hz, F0mean LAB 145 Hz. Những đỉnh nhọn và khoảng trống vẫn cần được xem như hạn chế của bộ ước lượng đơn giản.
 
 ### 14.4. phone_M2: hai biên gần chuẩn
 
@@ -721,17 +725,17 @@ F0 trung vị ước lượng 142.9 Hz, gần F0mean LAB 145 Hz. Những đỉnh
 
 Biên bắt đầu 0.52 s so với chuẩn 0.53 s, biên kết thúc 2.51 s so với chuẩn 2.52 s. Cả hai đều sớm 10 ms. MAE và RMSE cùng bằng 10 ms; không có biên thừa/thiếu. Độ lệch tương đương một bước dịch khung.
 
-F0 trung vị 135.0 Hz, F0mean LAB 129 Hz. F0 là tín hiệu minh họa, không được dùng để đưa hai biên về gần LAB.
+F0 trung vị 139.1 Hz, F0mean LAB 129 Hz. F0 là tín hiệu minh họa, không được dùng để đưa hai biên về gần LAB.
 
-### 14.5. studio_F2: hai biên sớm 20 ms
+### 14.5. studio_F2: biên sớm 10 và 20 ms
 
 ![Binary Search trên studio_F2](ket_qua/studio_F2.png)
 
-Biên bắt đầu dự đoán 0.75 s so với chuẩn 0.77 s; biên kết thúc 2.35 s so với chuẩn 2.37 s. MAE và RMSE đều 20 ms; không có biên thừa/thiếu.
+Biên bắt đầu dự đoán 0.76 s so với chuẩn 0.77 s: sớm 10 ms; biên kết thúc 2.35 s so với chuẩn 2.37 s: sớm 20 ms. MAE = 15 ms, RMSE ≈ 15.8 ms; không có biên thừa/thiếu.
 
 Khung chồng lấn chứa cả hai trạng thái gần ranh giới và quy ước gán biên tại đầu khung là nguyên nhân khả dĩ của độ lệch. Không thể tách riêng ảnh hưởng từng nguyên nhân chỉ từ hai vị trí biên.
 
-F0 trung vị 185.3 Hz, F0mean LAB 200 Hz.
+F0 trung vị 184.5 Hz, F0mean LAB 200 Hz.
 
 ### 14.6. studio_M2: kết quả chính xác nhất của Binary Search
 
@@ -739,7 +743,7 @@ F0 trung vị 185.3 Hz, F0mean LAB 200 Hz.
 
 Biên bắt đầu trùng chuẩn tại 0.45 s; biên kết thúc 1.92 s, sớm 10 ms so với chuẩn 1.93 s. MAE = 5 ms, RMSE ≈ 7.1 ms; không có biên thừa/thiếu.
 
-F0 trung vị 139.1 Hz, F0mean LAB 155 Hz. Khác biệt giữa trung vị ước lượng và trung bình LAB không phải sai số F0 theo từng khung; hai thống kê và tập khung có thể khác nhau.
+F0 trung vị 141.6 Hz, F0mean LAB 155 Hz. Khác biệt giữa trung vị ước lượng và trung bình LAB không phải sai số F0 theo từng khung; hai thống kê và tập khung có thể khác nhau.
 
 ## 15. Ảnh hưởng của nhiễu và giới hạn
 
@@ -779,8 +783,8 @@ P_WAV là công suất toàn bản ghi, gồm cả Speech và Silence. Q không 
 
 | Q | BER trung bình Binary Search trên 4 tệp × 3 seed |
 |---:|---:|
-| 30 dB | 0.013 |
-| 20 dB | 0.183 |
+| 30 dB | 0.028 |
+| 20 dB | 0.292 |
 | 10 dB | 0.500 |
 | 0 dB | 0.500 |
 
@@ -803,8 +807,9 @@ Ngưỡng cố định suy giảm mạnh khi nền nhiễu tăng so với traini
 | main.py | Điểm chạy của thành viên Binary Search |
 | algorithm.py: binary_threshold | Học T bằng chia đôi miền ngưỡng |
 | ../speech_silence/data.py | Đọc WAV/LAB, gán nhãn tại tâm khung |
+| ../speech_silence/config.py | Cấu hình chung FRAME_MS=25, HOP_MS=10 |
 | ../speech_silence/features.py | STE/MA, chuẩn hóa, F0, hậu xử lý và biên |
-| ../speech_silence/pipeline.py | Chọn khung trên training, dự đoán test |
+| ../speech_silence/pipeline.py | Kiểm chứng ở khung cố định, học ngưỡng và dự đoán test |
 | ../speech_silence/evaluation.py | Ghép biên, MAE/RMSE và BER |
 | ../speech_silence/demo.py | Bốn figure và bình luận Markdown |
 
@@ -828,6 +833,6 @@ Chỉ lưu hình: thêm --no-show. Khảo sát nhiễu cho riêng Binary: thêm 
 
 ## 17. Kết luận
 
-Binary Search học ngưỡng bằng cân bằng độ lệch năng lượng của hai lớp đã gán nhãn trên training. Với khung 30 ms và bước dịch 10 ms, ngưỡng chung là 0.0015631333. Trên toàn bộ bốn WAV kiểm thử, chương trình đạt MAE 20.0 ms, RMSE 30.8 ms, ghép được tám biên, có một biên thừa và không thiếu biên.
+Binary Search học ngưỡng bằng cân bằng độ lệch năng lượng của hai lớp đã gán nhãn trên training. Với khung cố định 25 ms và bước dịch 10 ms, ngưỡng chung là 0.0013012666. Trên toàn bộ bốn WAV kiểm thử, chương trình đạt MAE 20.0 ms, RMSE 33.5 ms, ghép được tám biên, có ba biên thừa và không thiếu biên.
 
-Kết quả tốt trên các bản ghi hiện có, nhưng còn nhạy với nhiễu nền và Speech năng lượng thấp. Trường hợp phone_F2 minh họa việc một khung nhiễu vượt ngưỡng kết hợp với hậu xử lý Silence ngắn có thể tạo Speech giả ở đuôi. Vì vậy khi trình bày cần nêu cả chỉ số sai lệch lẫn số biên thừa/thiếu và giới hạn dữ liệu.
+Kết quả tốt trên các bản ghi hiện có, nhưng còn nhạy với nhiễu nền và Speech năng lượng thấp. Trường hợp phone_F2 minh họa Speech giả ở đầu và cuối bản ghi do nhiễu vượt ngưỡng cùng hậu xử lý Silence ngắn. Vì vậy khi trình bày cần nêu cả chỉ số sai lệch lẫn số biên thừa/thiếu và giới hạn dữ liệu.

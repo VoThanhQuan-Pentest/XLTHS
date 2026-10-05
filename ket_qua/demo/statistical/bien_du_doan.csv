@@ -1,9 +1,9 @@
 ﻿wav,method,time_s,starts_speech
-phone_F2,statistical,1.02,True
-phone_F2,statistical,4.04,False
+phone_F2,statistical,1.01,True
+phone_F2,statistical,4.07,False
 phone_M2,statistical,0.52,True
-phone_M2,statistical,2.5,False
-studio_F2,statistical,0.75,True
-studio_F2,statistical,2.34,False
-studio_M2,statistical,0.45,True
-studio_M2,statistical,1.91,False
+phone_M2,statistical,2.51,False
+studio_F2,statistical,0.76,True
+studio_F2,statistical,2.35,False
+studio_M2,statistical,0.46,True
+studio_M2,statistical,1.92,False

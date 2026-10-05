@@ -14,6 +14,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 import numpy as np
+from .config import HOP_MS
 
 
 @dataclass(frozen=True)
@@ -40,7 +41,7 @@ class Features:
     edges: np.ndarray
 
 
-def extract(samples: np.ndarray, fs: int, frame_ms: int, hop_ms: int = 10,
+def extract(samples: np.ndarray, fs: int, frame_ms: int, hop_ms: int = HOP_MS,
             compute_f0: bool = True) -> Features:
     """Trích xuất toàn bộ các đặc trưng ngắn hạn từ mảng mẫu âm thanh WAV.
 
@@ -50,7 +51,7 @@ def extract(samples: np.ndarray, fs: int, frame_ms: int, hop_ms: int = 10,
     Args:
         samples: Mảng 1D float chứa biên độ các mẫu tín hiệu âm thanh đã chuẩn hóa về [-1, 1].
         fs: Tần số lấy mẫu của tín hiệu (Hz), ví dụ 16000 hoặc 44100 Hz.
-        frame_ms: Độ dài mỗi khung tính bằng mili-giây (ví dụ: 20 ms, 30 ms).
+        frame_ms: Độ dài khung của tiện ích tổng quát; ba thuật toán luôn truyền FRAME_MS=25.
         hop_ms: Bước dịch chuyển giữa hai khung kế tiếp tính bằng mili-giây (mặc định: 10 ms).
         compute_f0: Cờ boolean cho biết có thực hiện tính F0 hay không (mặc định: True).
 

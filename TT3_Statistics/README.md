@@ -1,5 +1,7 @@
 # Thành viên 3: Statistical Gaussian
 
+Phân khung cố định 25 ms, bước dịch 10 ms cho cả training và test. Các mean/std và ngưỡng được học lại từ training với cấu hình cố định, không còn chọn độ dài khung bằng Cross Validation.
+
 Bấm Run ở `main.py` trong thư mục này, hoặc chạy từ thư mục gốc:
 
 ```bash
