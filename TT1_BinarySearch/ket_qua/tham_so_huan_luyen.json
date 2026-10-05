@@ -4,14 +4,20 @@
       "frame_ms": 25,
       "hop_ms": 10,
       "minimum_silence_ms": 200,
-      "binary_threshold": 0.0013012665647267243
+      "feature_layout": "centered_hop_v1",
+      "training_protocol": "train_calibration",
+      "binary_threshold": 0.0016054241805765488,
+      "median_order": 15
     }
   },
-  "validation": {
+  "calibration": {
     "binary": {
-      "balanced_error": 0.0908657481,
-      "boundary_misses": 2,
-      "mean_mae_ms": 20.000000000000004
+      "protocol": "train_calibration",
+      "boundary_misses": 0,
+      "mean_mae_ms": 14.999999999999986,
+      "balanced_error": 0.011809892735535385,
+      "candidate_count": 6,
+      "training_files": 4
     }
   }
 }

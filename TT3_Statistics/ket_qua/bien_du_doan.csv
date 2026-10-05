@@ -1,7 +1,7 @@
 ﻿wav,method,time_s,starts_speech
-phone_F2,statistical,1.01,True
-phone_F2,statistical,4.07,False
-phone_M2,statistical,0.52,True
+phone_F2,statistical,1.02,True
+phone_F2,statistical,4.05,False
+phone_M2,statistical,0.53,True
 phone_M2,statistical,2.51,False
 studio_F2,statistical,0.76,True
 studio_F2,statistical,2.35,False

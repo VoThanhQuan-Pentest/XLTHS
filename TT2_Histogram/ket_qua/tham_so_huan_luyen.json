@@ -4,21 +4,23 @@
       "frame_ms": 25,
       "hop_ms": 10,
       "minimum_silence_ms": 200,
+      "feature_layout": "centered_hop_v1",
+      "training_protocol": "train_calibration",
       "histogram": {
         "bins": 128,
-        "smooth": 1,
-        "weight": 10,
-        "min_peak_distance": 12,
-        "min_valley_depth": 0.2
-      },
-      "histogram_fallback": 0.020951704545454544
+        "smooth": 3,
+        "weight": 30
+      }
     }
   },
-  "validation": {
+  "calibration": {
     "histogram": {
-      "balanced_error": 0.0279674933,
-      "boundary_misses": 2,
-      "mean_mae_ms": 20.000000000000018
+      "protocol": "train_calibration",
+      "boundary_misses": 0,
+      "mean_mae_ms": 12.499999999999982,
+      "balanced_error": 0.009474716700894744,
+      "candidate_count": 8,
+      "training_files": 4
     }
   }
 }

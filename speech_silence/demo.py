@@ -41,6 +41,10 @@ def plot_demo(record: Record, results: dict, labels: dict, path: Path, number: i
     for index, (time, _) in enumerate(reference_boundaries(record.labels)):
         waveform.axvline(time, color="red", ls="--", lw=1,
                          label="Biên chuẩn" if index == 0 else None)
+    for method_index, (method, result) in enumerate(results.items()):
+        for index, (time, _) in enumerate(predicted_boundaries(result["mask"], result["features"].edges)):
+            waveform.axvline(time, color="blue", ls=("-", "-.", ":")[method_index], lw=1,
+                            label=f"Biên dự đoán ({labels[method]})" if index == 0 else None)
     waveform.legend(fontsize=7, loc="upper right")
 
     # Khối 3: Mỗi phương pháp có STE, ngưỡng và hai loại biên trên một trục riêng.
@@ -49,7 +53,11 @@ def plot_demo(record: Record, results: dict, labels: dict, path: Path, number: i
         axis = fig.add_subplot(grid[1, index * width:(index + 1) * width])
         feature, mask = result["features"], result["mask"]
         metric = result["metrics"]
-        axis.plot(feature.times, feature.normalized_ste, color="0.35", lw=0.8)
+        axis.plot(feature.times, feature.normalized_ste, color="0.65", lw=0.7, label="STE trước lọc")
+        decision = feature.decision_ste if feature.decision_ste is not None else feature.normalized_ste
+        axis.plot(feature.times, decision, color="#185a8d", lw=0.9,
+                  label="Median so ngưỡng" if method == "binary" else "STE so ngưỡng")
+        axis.legend(fontsize=6, loc="upper left")
         axis.axhline(result["threshold"], color="#e69f00", ls=":", lw=1)
 
         # Khối 4: Tô Speech và vẽ biên xanh/đỏ mà không trộn ba thuật toán với nhau.
@@ -98,7 +106,8 @@ def figure_comments(record: Record, results: dict, labels: dict) -> list[str]:
     # Khối 1: Gắn bình luận với đúng WAV và PNG, mô tả các panel chung.
     lines = [f"## {record.name}.png", "",
              f"Phân khung cố định {FRAME_MS} ms, bước dịch {HOP_MS} ms.",
-             "Hình gồm waveform, normalized STE/ngưỡng/biên của từng phương pháp, logSTE/logMA và F0.",
+             "Cửa sổ căn giữa ô quyết định 10 ms; mép WAV chỉ dùng mẫu thật.",
+             "Hình gồm waveform, STE trước/sau median nếu có, ngưỡng/biên, logSTE/logMA và F0.",
              "Đường xanh là biên dự đoán, đường đỏ nét đứt là biên chuẩn. Các chỉ số tính bằng ms.", ""]
     for method, result in results.items():
         metric = result["metrics"]
@@ -139,7 +148,7 @@ def figure_comments(record: Record, results: dict, labels: dict) -> list[str]:
         if metric["missed"]:
             lines.append(f'- Thiếu {metric["missed"]} biên: không có chuyển tiếp dự đoán cùng loại để ghép đủ.')
         if result["fallback"]:
-            lines.append("- Histogram thiếu hai đỉnh nên đã dùng ngưỡng dự phòng từ training.")
+            lines.append("- Histogram thiếu hai đỉnh nên dùng mean normalized STE của chính WAV này.")
         lines.append("")
 
     # Khối 5: F0 hữu thanh được ước lượng độc lập với LAB, không có F0 chuẩn theo thời gian.

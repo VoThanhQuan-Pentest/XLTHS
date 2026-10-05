@@ -10,7 +10,6 @@ Các tiêu chí đánh giá bao gồm:
 
 from __future__ import annotations
 
-from functools import lru_cache
 import numpy as np
 
 from .data import Record, reference_boundaries, speech_at
@@ -19,11 +18,10 @@ from .features import Features, predicted_boundaries
 
 def boundary_scores(reference: list[tuple[float, bool]],
                     predicted: list[tuple[float, bool]]) -> dict:
-    """Ghép cặp tối ưu giữa các biên chuẩn và biên dự đoán để tính sai số MAE/RMSE.
+    """Ghép greedy các cặp biên cùng hướng, gần nhất trước, để tính MAE/RMSE theo BT1.
 
-    Sử dụng quy hoạch động để ghép các biên cùng loại (cùng bắt đầu Speech hoặc cùng bắt đầu Silence)
-    theo thứ tự thời gian. Không áp dụng ngưỡng dung sai nhân tạo (như 200 ms) trong việc tính toán sai số,
-    đảm bảo phản ánh trung thực độ lệch thời gian giữa thuật toán và nhãn chuẩn.
+    Mỗi biên chỉ được dùng một lần. Khi khoảng cách hòa, ưu tiên biên chuẩn rồi
+    biên dự đoán xuất hiện sớm hơn. Không áp dụng cutoff 100/200 ms khi ghép.
 
     Args:
         reference: Danh sách các biên chuẩn Ground Truth dạng (thời_điểm_s, bắt_đầu_speech_bool).
@@ -39,27 +37,22 @@ def boundary_scores(reference: list[tuple[float, bool]],
             - precision, recall, f1: Độ chuẩn xác, độ phủ và F1-score.
             - boundary_details: Danh sách chi tiết từng cặp biên được ghép kèm độ lệch ms.
     """
-    # Khối 1: Quy hoạch động tìm cách ghép cặp nhiều nhất với tổng sai số nhỏ nhất
-    @lru_cache(None)
-    def solve(i: int, j: int) -> tuple[int, float, tuple[tuple[int, int], ...]]:
-        """Ghép từ biên i/j; trả số cặp, tổng độ lệch và chỉ số các cặp tối ưu."""
-        if i == len(reference) or j == len(predicted):
-            return 0, 0.0, ()
+    # Khối 1: Liệt kê các cặp hợp lệ và sắp theo khoảng cách, thời gian và chỉ số.
+    candidates = sorted(
+        (abs(p[0] - r[0]), r[0], p[0], i, j)
+        for i, r in enumerate(reference) for j, p in enumerate(predicted)
+        if r[1] == p[1]
+    )
+    used_reference, used_predicted, pairs = set(), set(), []
+    for _, _, _, i, j in candidates:
+        if i not in used_reference and j not in used_predicted:
+            used_reference.add(i)
+            used_predicted.add(j)
+            pairs.append((i, j))
 
-        # Nhánh bỏ qua một biên ở reference hoặc predicted
-        options = [solve(i + 1, j), solve(i, j + 1)]
-
-        # Nếu cùng loại biên (cùng chiều chuyển tiếp Sp/Sil), xem xét ghép cặp
-        if reference[i][1] == predicted[j][1]:
-            matched_count, sum_err, sub_pairs = solve(i + 1, j + 1)
-            pair_err = abs(reference[i][0] - predicted[j][0])
-            options.append((matched_count + 1, sum_err + pair_err, ((i, j),) + sub_pairs))
-
-        # Ưu tiên ghép được nhiều biên nhất, sau đó đến tổng sai số nhỏ nhất
-        return max(options, key=lambda row: (row[0], -row[1]))
-
-    # Khối 2: Thực thi hàm giải thuật và tính toán độ lệch từng cặp
-    count, _, pairs = solve(0, 0)
+    # Khối 2: Đưa cặp đã ghép về thứ tự biên chuẩn để trình bày và tính sai lệch.
+    pairs.sort(key=lambda pair: (reference[pair[0]][0], predicted[pair[1]][0]))
+    count = len(pairs)
     errors = np.array([(predicted[j][0] - reference[i][0]) * 1000 for i, j in pairs])
     details = [
         {
@@ -83,6 +76,24 @@ def boundary_scores(reference: list[tuple[float, bool]],
         "f1": 2 * count / (len(reference) + len(predicted)) if reference or predicted else 1.0,
         "boundary_details": details
     }
+
+
+def summarize_scores(rows: list[dict]) -> dict:
+    """Nhận metric từng WAV; trả mean-file và pooled MAE/RMSE riêng, cùng số biên lỗi."""
+    # Khối 1: Mean-file không coi file chưa có cặp ghép là sai số zero.
+    valid = [row for row in rows if row["mae_ms"] is not None and row["rmse_ms"] is not None]
+    complete = bool(rows) and len(valid) == len(rows)
+    count = sum(row["matched"] for row in rows)
+    result = {"files": len(rows), "files_with_matched_boundaries": len(valid),
+              "matched": count, "extra": sum(r["extra"] for r in rows),
+              "missed": sum(r["missed"] for r in rows),
+              "mean_file_mae_ms": float(np.mean([r["mae_ms"] for r in valid])) if complete else None,
+              "mean_file_rmse_ms": float(np.mean([r["rmse_ms"] for r in valid])) if complete else None}
+
+    # Khối 2: Pooled dùng số cặp làm trọng số và căn sau khi gộp bình phương lỗi.
+    result["pooled_mae_ms"] = sum(r["mae_ms"] * r["matched"] for r in valid) / count if count else None
+    result["pooled_rmse_ms"] = float(np.sqrt(sum(r["rmse_ms"] ** 2 * r["matched"] for r in valid) / count)) if count else None
+    return result
 
 
 def score(record: Record, features: Features, mask: np.ndarray) -> dict:
@@ -130,7 +141,7 @@ def estimate_snr(record: Record) -> float | None:
         record: Đối tượng Record chứa mẫu tín hiệu và các đoạn nhãn chuẩn.
 
     Returns:
-        Giá trị SNR ước lượng tính bằng dB (float), hoặc None nếu thiếu nhãn một trong hai lớp.
+        SNR theo dB, hoặc None nếu thiếu lớp/công suất không tạo được tỷ số hợp lệ.
     """
     # Khối 1: Tách và tích lũy năng lượng của từng vùng Speech và Silence
     class_energies = [[], []]
@@ -150,8 +161,10 @@ def estimate_snr(record: Record) -> float | None:
     noise_power = sum(class_energies[0]) / (total_durations[0] * record.fs)
     signal_plus_noise_power = sum(class_energies[1]) / (total_durations[1] * record.fs)
 
-    # SNR = 10 * log10(max(P_signal, eps) / P_noise)
-    estimated_signal_power = max(signal_plus_noise_power - noise_power, 1e-12)
-    snr_db = float(10 * np.log10(estimated_signal_power / max(noise_power, 1e-12)))
+    # Khối 3b: Không dùng floor để tạo SNR hữu hạn cho zero-audio hoặc P_signal <= 0.
+    if noise_power <= 0 or signal_plus_noise_power <= noise_power:
+        return None
+    estimated_signal_power = signal_plus_noise_power - noise_power
+    snr_db = float(10 * np.log10(estimated_signal_power / noise_power))
 
     return snr_db

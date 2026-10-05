@@ -1,19 +1,19 @@
 ﻿wav,method,signal_to_added_noise_db,seed,matched,missed,extra,mae_ms,rmse_ms,precision,recall,f1,boundary_details,balanced_error
-phone_F2,binary,30,2026,2,0,3,49.999999999999936,64.03124237432839,0.4,1.0,0.5714285714285714,"[{'reference_s': 1.02, 'predicted_s': 1.01, 'starts_speech': True, 'error_ms': -10.000000000000009}, {'reference_s': 4.04, 'predicted_s': 4.13, 'starts_speech': False, 'error_ms': 89.99999999999986}]",0.09831460674157304
-phone_F2,binary,30,2027,2,0,3,49.999999999999936,64.03124237432839,0.4,1.0,0.5714285714285714,"[{'reference_s': 1.02, 'predicted_s': 1.01, 'starts_speech': True, 'error_ms': -10.000000000000009}, {'reference_s': 4.04, 'predicted_s': 4.13, 'starts_speech': False, 'error_ms': 89.99999999999986}]",0.09831460674157304
-phone_F2,binary,30,2028,2,0,3,49.999999999999936,64.03124237432839,0.4,1.0,0.5714285714285714,"[{'reference_s': 1.02, 'predicted_s': 1.01, 'starts_speech': True, 'error_ms': -10.000000000000009}, {'reference_s': 4.04, 'predicted_s': 4.13, 'starts_speech': False, 'error_ms': 89.99999999999986}]",0.09831460674157304
-phone_F2,binary,20,2026,2,0,3,74.99999999999984,99.24716620639582,0.4,1.0,0.5714285714285714,"[{'reference_s': 1.02, 'predicted_s': 1.01, 'starts_speech': True, 'error_ms': -10.000000000000009}, {'reference_s': 4.04, 'predicted_s': 4.18, 'starts_speech': False, 'error_ms': 139.9999999999997}]",0.16292134831460675
-phone_F2,binary,20,2027,2,0,3,74.99999999999984,99.24716620639582,0.4,1.0,0.5714285714285714,"[{'reference_s': 1.02, 'predicted_s': 1.01, 'starts_speech': True, 'error_ms': -10.000000000000009}, {'reference_s': 4.04, 'predicted_s': 4.18, 'starts_speech': False, 'error_ms': 139.9999999999997}]",0.16573033707865167
-phone_F2,binary,20,2028,2,0,3,74.99999999999984,99.24716620639582,0.4,1.0,0.5714285714285714,"[{'reference_s': 1.02, 'predicted_s': 1.01, 'starts_speech': True, 'error_ms': -10.000000000000009}, {'reference_s': 4.04, 'predicted_s': 4.18, 'starts_speech': False, 'error_ms': 139.9999999999997}]",0.16292134831460675
+phone_F2,binary,30,2026,2,0,0,35.00000000000014,49.49747468305853,1.0,1.0,1.0,"[{'reference_s': 1.02, 'predicted_s': 1.02, 'starts_speech': True, 'error_ms': 0.0}, {'reference_s': 4.04, 'predicted_s': 4.11, 'starts_speech': False, 'error_ms': 70.00000000000028}]",0.019662921348314606
+phone_F2,binary,30,2027,2,0,0,35.00000000000014,49.49747468305853,1.0,1.0,1.0,"[{'reference_s': 1.02, 'predicted_s': 1.02, 'starts_speech': True, 'error_ms': 0.0}, {'reference_s': 4.04, 'predicted_s': 4.11, 'starts_speech': False, 'error_ms': 70.00000000000028}]",0.019662921348314606
+phone_F2,binary,30,2028,2,0,0,35.00000000000014,49.49747468305853,1.0,1.0,1.0,"[{'reference_s': 1.02, 'predicted_s': 1.02, 'starts_speech': True, 'error_ms': 0.0}, {'reference_s': 4.04, 'predicted_s': 4.11, 'starts_speech': False, 'error_ms': 70.00000000000028}]",0.019662921348314606
+phone_F2,binary,20,2026,2,0,1,60.00000000000016,78.10249675906677,0.6666666666666666,1.0,0.8,"[{'reference_s': 1.02, 'predicted_s': 1.01, 'starts_speech': True, 'error_ms': -10.000000000000009}, {'reference_s': 4.04, 'predicted_s': 4.15, 'starts_speech': False, 'error_ms': 110.00000000000031}]",0.056179775280898875
+phone_F2,binary,20,2027,2,0,1,60.00000000000016,78.10249675906677,0.6666666666666666,1.0,0.8,"[{'reference_s': 1.02, 'predicted_s': 1.01, 'starts_speech': True, 'error_ms': -10.000000000000009}, {'reference_s': 4.04, 'predicted_s': 4.15, 'starts_speech': False, 'error_ms': 110.00000000000031}]",0.056179775280898875
+phone_F2,binary,20,2028,2,0,1,60.00000000000016,78.10249675906677,0.6666666666666666,1.0,0.8,"[{'reference_s': 1.02, 'predicted_s': 1.01, 'starts_speech': True, 'error_ms': -10.000000000000009}, {'reference_s': 4.04, 'predicted_s': 4.15, 'starts_speech': False, 'error_ms': 110.00000000000031}]",0.056179775280898875
 phone_F2,binary,10,2026,0,2,0,,,0.0,0.0,0.0,[],0.5
 phone_F2,binary,10,2027,0,2,0,,,0.0,0.0,0.0,[],0.5
 phone_F2,binary,10,2028,0,2,0,,,0.0,0.0,0.0,[],0.5
 phone_F2,binary,0,2026,0,2,0,,,0.0,0.0,0.0,[],0.5
 phone_F2,binary,0,2027,0,2,0,,,0.0,0.0,0.0,[],0.5
 phone_F2,binary,0,2028,0,2,0,,,0.0,0.0,0.0,[],0.5
-phone_M2,binary,30,2026,2,0,0,5.000000000000004,7.071067811865482,1.0,1.0,1.0,"[{'reference_s': 0.53, 'predicted_s': 0.52, 'starts_speech': True, 'error_ms': -10.000000000000009}, {'reference_s': 2.52, 'predicted_s': 2.52, 'starts_speech': False, 'error_ms': 0.0}]",0.006172839506172839
-phone_M2,binary,30,2027,2,0,0,5.000000000000004,7.071067811865482,1.0,1.0,1.0,"[{'reference_s': 0.53, 'predicted_s': 0.52, 'starts_speech': True, 'error_ms': -10.000000000000009}, {'reference_s': 2.52, 'predicted_s': 2.52, 'starts_speech': False, 'error_ms': 0.0}]",0.006172839506172839
-phone_M2,binary,30,2028,2,0,0,5.000000000000004,7.071067811865482,1.0,1.0,1.0,"[{'reference_s': 0.53, 'predicted_s': 0.52, 'starts_speech': True, 'error_ms': -10.000000000000009}, {'reference_s': 2.52, 'predicted_s': 2.52, 'starts_speech': False, 'error_ms': 0.0}]",0.006172839506172839
+phone_M2,binary,30,2026,2,0,0,0.0,0.0,1.0,1.0,1.0,"[{'reference_s': 0.53, 'predicted_s': 0.53, 'starts_speech': True, 'error_ms': 0.0}, {'reference_s': 2.52, 'predicted_s': 2.52, 'starts_speech': False, 'error_ms': 0.0}]",0.0
+phone_M2,binary,30,2027,2,0,0,0.0,0.0,1.0,1.0,1.0,"[{'reference_s': 0.53, 'predicted_s': 0.53, 'starts_speech': True, 'error_ms': 0.0}, {'reference_s': 2.52, 'predicted_s': 2.52, 'starts_speech': False, 'error_ms': 0.0}]",0.0
+phone_M2,binary,30,2028,2,0,0,0.0,0.0,1.0,1.0,1.0,"[{'reference_s': 0.53, 'predicted_s': 0.53, 'starts_speech': True, 'error_ms': 0.0}, {'reference_s': 2.52, 'predicted_s': 2.52, 'starts_speech': False, 'error_ms': 0.0}]",0.0
 phone_M2,binary,20,2026,0,2,0,,,0.0,0.0,0.0,[],0.5
 phone_M2,binary,20,2027,0,2,0,,,0.0,0.0,0.0,[],0.5
 phone_M2,binary,20,2028,0,2,0,,,0.0,0.0,0.0,[],0.5
@@ -23,24 +23,24 @@ phone_M2,binary,10,2028,0,2,0,,,0.0,0.0,0.0,[],0.5
 phone_M2,binary,0,2026,0,2,0,,,0.0,0.0,0.0,[],0.5
 phone_M2,binary,0,2027,0,2,0,,,0.0,0.0,0.0,[],0.5
 phone_M2,binary,0,2028,0,2,0,,,0.0,0.0,0.0,[],0.5
-studio_F2,binary,30,2026,2,0,0,15.000000000000014,15.81138830084191,1.0,1.0,1.0,"[{'reference_s': 0.77, 'predicted_s': 0.76, 'starts_speech': True, 'error_ms': -10.000000000000009}, {'reference_s': 2.37, 'predicted_s': 2.35, 'starts_speech': False, 'error_ms': -20.000000000000018}]",0.003125
-studio_F2,binary,30,2027,2,0,0,15.000000000000014,15.81138830084191,1.0,1.0,1.0,"[{'reference_s': 0.77, 'predicted_s': 0.76, 'starts_speech': True, 'error_ms': -10.000000000000009}, {'reference_s': 2.37, 'predicted_s': 2.35, 'starts_speech': False, 'error_ms': -20.000000000000018}]",0.003125
-studio_F2,binary,30,2028,2,0,0,15.000000000000014,15.81138830084191,1.0,1.0,1.0,"[{'reference_s': 0.77, 'predicted_s': 0.76, 'starts_speech': True, 'error_ms': -10.000000000000009}, {'reference_s': 2.37, 'predicted_s': 2.35, 'starts_speech': False, 'error_ms': -20.000000000000018}]",0.003125
-studio_F2,binary,20,2026,2,0,0,10.00000000000012,10.00000000000012,1.0,1.0,1.0,"[{'reference_s': 0.77, 'predicted_s': 0.76, 'starts_speech': True, 'error_ms': -10.000000000000009}, {'reference_s': 2.37, 'predicted_s': 2.36, 'starts_speech': False, 'error_ms': -10.000000000000231}]",0.0
-studio_F2,binary,20,2027,2,0,0,15.000000000000124,15.811388300841982,1.0,1.0,1.0,"[{'reference_s': 0.77, 'predicted_s': 0.75, 'starts_speech': True, 'error_ms': -20.000000000000018}, {'reference_s': 2.37, 'predicted_s': 2.36, 'starts_speech': False, 'error_ms': -10.000000000000231}]",0.003246753246753247
-studio_F2,binary,20,2028,2,0,0,15.000000000000124,15.811388300841982,1.0,1.0,1.0,"[{'reference_s': 0.77, 'predicted_s': 0.75, 'starts_speech': True, 'error_ms': -20.000000000000018}, {'reference_s': 2.37, 'predicted_s': 2.36, 'starts_speech': False, 'error_ms': -10.000000000000231}]",0.003246753246753247
+studio_F2,binary,30,2026,2,0,0,10.00000000000012,10.00000000000012,1.0,1.0,1.0,"[{'reference_s': 0.77, 'predicted_s': 0.76, 'starts_speech': True, 'error_ms': -10.000000000000009}, {'reference_s': 2.37, 'predicted_s': 2.36, 'starts_speech': False, 'error_ms': -10.000000000000231}]",0.006371753246753247
+studio_F2,binary,30,2027,2,0,0,10.00000000000012,10.00000000000012,1.0,1.0,1.0,"[{'reference_s': 0.77, 'predicted_s': 0.76, 'starts_speech': True, 'error_ms': -10.000000000000009}, {'reference_s': 2.37, 'predicted_s': 2.36, 'starts_speech': False, 'error_ms': -10.000000000000231}]",0.006371753246753247
+studio_F2,binary,30,2028,2,0,0,10.00000000000012,10.00000000000012,1.0,1.0,1.0,"[{'reference_s': 0.77, 'predicted_s': 0.76, 'starts_speech': True, 'error_ms': -10.000000000000009}, {'reference_s': 2.37, 'predicted_s': 2.36, 'starts_speech': False, 'error_ms': -10.000000000000231}]",0.006371753246753247
+studio_F2,binary,20,2026,2,0,0,10.00000000000012,10.00000000000012,1.0,1.0,1.0,"[{'reference_s': 0.77, 'predicted_s': 0.76, 'starts_speech': True, 'error_ms': -10.000000000000009}, {'reference_s': 2.37, 'predicted_s': 2.36, 'starts_speech': False, 'error_ms': -10.000000000000231}]",0.006371753246753247
+studio_F2,binary,20,2027,2,0,0,5.000000000000004,7.071067811865482,1.0,1.0,1.0,"[{'reference_s': 0.77, 'predicted_s': 0.76, 'starts_speech': True, 'error_ms': -10.000000000000009}, {'reference_s': 2.37, 'predicted_s': 2.37, 'starts_speech': False, 'error_ms': 0.0}]",0.003246753246753247
+studio_F2,binary,20,2028,2,0,0,5.000000000000004,7.071067811865482,1.0,1.0,1.0,"[{'reference_s': 0.77, 'predicted_s': 0.76, 'starts_speech': True, 'error_ms': -10.000000000000009}, {'reference_s': 2.37, 'predicted_s': 2.37, 'starts_speech': False, 'error_ms': 0.0}]",0.003246753246753247
 studio_F2,binary,10,2026,0,2,0,,,0.0,0.0,0.0,[],0.5
 studio_F2,binary,10,2027,0,2,0,,,0.0,0.0,0.0,[],0.5
 studio_F2,binary,10,2028,0,2,0,,,0.0,0.0,0.0,[],0.5
 studio_F2,binary,0,2026,0,2,0,,,0.0,0.0,0.0,[],0.5
 studio_F2,binary,0,2027,0,2,0,,,0.0,0.0,0.0,[],0.5
 studio_F2,binary,0,2028,0,2,0,,,0.0,0.0,0.0,[],0.5
-studio_M2,binary,30,2026,2,0,0,5.000000000000004,7.071067811865482,1.0,1.0,1.0,"[{'reference_s': 0.45, 'predicted_s': 0.45, 'starts_speech': True, 'error_ms': 0.0}, {'reference_s': 1.93, 'predicted_s': 1.92, 'starts_speech': False, 'error_ms': -10.000000000000009}]",0.0033783783783783786
-studio_M2,binary,30,2027,2,0,0,5.000000000000004,7.071067811865482,1.0,1.0,1.0,"[{'reference_s': 0.45, 'predicted_s': 0.45, 'starts_speech': True, 'error_ms': 0.0}, {'reference_s': 1.93, 'predicted_s': 1.92, 'starts_speech': False, 'error_ms': -10.000000000000009}]",0.0033783783783783786
-studio_M2,binary,30,2028,2,0,0,5.000000000000004,7.071067811865482,1.0,1.0,1.0,"[{'reference_s': 0.45, 'predicted_s': 0.45, 'starts_speech': True, 'error_ms': 0.0}, {'reference_s': 1.93, 'predicted_s': 1.92, 'starts_speech': False, 'error_ms': -10.000000000000009}]",0.0033783783783783786
-studio_M2,binary,20,2026,0,2,0,,,0.0,0.0,0.0,[],0.5
-studio_M2,binary,20,2027,0,2,0,,,0.0,0.0,0.0,[],0.5
-studio_M2,binary,20,2028,0,2,0,,,0.0,0.0,0.0,[],0.5
+studio_M2,binary,30,2026,2,0,0,5.000000000000004,7.071067811865482,1.0,1.0,1.0,"[{'reference_s': 0.45, 'predicted_s': 0.46, 'starts_speech': True, 'error_ms': 10.000000000000009}, {'reference_s': 1.93, 'predicted_s': 1.93, 'starts_speech': False, 'error_ms': 0.0}]",0.0033783783783783786
+studio_M2,binary,30,2027,2,0,0,5.000000000000004,7.071067811865482,1.0,1.0,1.0,"[{'reference_s': 0.45, 'predicted_s': 0.46, 'starts_speech': True, 'error_ms': 10.000000000000009}, {'reference_s': 1.93, 'predicted_s': 1.93, 'starts_speech': False, 'error_ms': 0.0}]",0.0033783783783783786
+studio_M2,binary,30,2028,2,0,0,5.000000000000004,7.071067811865482,1.0,1.0,1.0,"[{'reference_s': 0.45, 'predicted_s': 0.46, 'starts_speech': True, 'error_ms': 10.000000000000009}, {'reference_s': 1.93, 'predicted_s': 1.93, 'starts_speech': False, 'error_ms': 0.0}]",0.0033783783783783786
+studio_M2,binary,20,2026,2,0,0,5.000000000000004,7.071067811865482,1.0,1.0,1.0,"[{'reference_s': 0.45, 'predicted_s': 0.45, 'starts_speech': True, 'error_ms': 0.0}, {'reference_s': 1.93, 'predicted_s': 1.94, 'starts_speech': False, 'error_ms': 10.000000000000009}]",0.005555555555555556
+studio_M2,binary,20,2027,2,0,0,10.000000000000009,14.142135623730963,1.0,1.0,1.0,"[{'reference_s': 0.45, 'predicted_s': 0.45, 'starts_speech': True, 'error_ms': 0.0}, {'reference_s': 1.93, 'predicted_s': 1.95, 'starts_speech': False, 'error_ms': 20.000000000000018}]",0.011111111111111112
+studio_M2,binary,20,2028,2,0,0,5.000000000000004,7.071067811865482,1.0,1.0,1.0,"[{'reference_s': 0.45, 'predicted_s': 0.45, 'starts_speech': True, 'error_ms': 0.0}, {'reference_s': 1.93, 'predicted_s': 1.94, 'starts_speech': False, 'error_ms': 10.000000000000009}]",0.005555555555555556
 studio_M2,binary,10,2026,0,2,0,,,0.0,0.0,0.0,[],0.5
 studio_M2,binary,10,2027,0,2,0,,,0.0,0.0,0.0,[],0.5
 studio_M2,binary,10,2028,0,2,0,,,0.0,0.0,0.0,[],0.5

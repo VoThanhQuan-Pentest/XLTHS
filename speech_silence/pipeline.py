@@ -11,7 +11,7 @@ Quy trình hoạt động:
 
 from __future__ import annotations
 
-from dataclasses import asdict
+from dataclasses import asdict, replace
 from pathlib import Path
 import csv
 import json
@@ -21,10 +21,10 @@ import numpy as np
 
 from .algorithms import HistogramConfig, binary_threshold, gaussian_threshold, histogram_threshold
 from .data import Record, discover, read_record, speech_at, reference_boundaries
-from .evaluation import score, estimate_snr
-from .features import Features, extract, remove_virtual_silence, predicted_boundaries, segments
+from .evaluation import score, estimate_snr, summarize_scores
+from .features import Features, extract, median_filter, remove_virtual_silence, predicted_boundaries, segments
 from .demo import plot_demo, figure_comments
-from .config import FRAME_MS, HOP_MS
+from .config import FRAME_MS, HOP_MS, FEATURE_LAYOUT, TRAINING_PROTOCOL, MEDIAN_ORDERS, HISTOGRAM_WEIGHTS
 
 METHODS = ("binary", "histogram", "statistical")
 METHOD_LABELS = {
@@ -34,178 +34,112 @@ METHOD_LABELS = {
 }
 
 
-def training_arrays(records: list[Record]) -> tuple[np.ndarray, np.ndarray]:
-    """Trích xuất và gộp mảng normalized STE của hai lớp Silence và Speech từ tập huấn luyện.
-
-    Args:
-        records: Danh sách các đối tượng Record của tập huấn luyện.
-
-    Returns:
-        tuple gồm (silence_ste, speech_ste) dưới dạng mảng 1D numpy float.
-    """
-    # Khối 1: Khởi tạo danh sách chứa các giá trị năng lượng của từng lớp
-    silence_values: list[float] = []
-    speech_values: list[float] = []
-
-    # Khối 2: Duyệt qua từng bản ghi huấn luyện và trích xuất đặc trưng
+def training_arrays(records: list[Record], median_order: int = 1) -> tuple[np.ndarray, np.ndarray]:
+    """Nhận TRAIN/bậc median; trả STE hai lớp, chỉ lấy ô có nhãn tại tâm quyết định."""
+    # Khối 1: Mỗi WAV chuẩn hóa riêng, sau đó mới median; không chuẩn hóa lại đường lọc.
+    silence_values, speech_values = [], []
     for record in records:
         features = extract(record.samples, record.fs, FRAME_MS, HOP_MS, compute_f0=False)
+        decision = median_filter(features.normalized_ste, median_order)
         truth, valid = speech_at(features.times, record.labels)
-        # Phân tách khung Silence (valid & ~truth) và Speech (valid & truth)
-        silence_values.extend(features.normalized_ste[valid & ~truth])
-        speech_values.extend(features.normalized_ste[valid & truth])
 
+        # Khối 2: Gộp đặc trưng có nhãn, không nối bốn WAV thành một tín hiệu mới.
+        silence_values.extend(decision[valid & ~truth])
+        speech_values.extend(decision[valid & truth])
     return np.asarray(silence_values), np.asarray(speech_values)
 
 
-def fit(records: list[Record], histogram: HistogramConfig,
-        method: str | None = None) -> dict:
-    """Xác định bộ tham số và các ngưỡng phân đoạn tối ưu từ dữ liệu huấn luyện.
+def fit(records: list[Record], histogram: HistogramConfig | None = None,
+        method: str | None = None, median_order: int = 1) -> dict:
+    """Nhận TRAIN/cấu hình/phương pháp; trả mô hình BT1 chỉ dùng các khung training có nhãn."""
+    # Khối 1: Ghi cả bố trí cửa sổ để mô hình 25/10 ms cũ không được dùng nhầm.
+    if method is not None and method not in METHODS:
+        raise ValueError(f"Thuật toán không hợp lệ: {method}")
+    model = {"frame_ms": FRAME_MS, "hop_ms": HOP_MS, "minimum_silence_ms": 200,
+             "feature_layout": FEATURE_LAYOUT, "training_protocol": TRAINING_PROTOCOL}
 
-    Args:
-        records: Danh sách Record thuộc tập huấn luyện.
-        histogram: Cấu hình tham số HistogramConfig.
-        method: Thuật toán cần huấn luyện; None huấn luyện cả ba.
-
-    Returns:
-        Từ điển chứa bộ mô hình huấn luyện (ngưỡng nhị phân, ngưỡng Gaussian, ngưỡng dự phòng).
-    """
-    # Khối 1: Trích xuất mảng năng lượng hai lớp từ tập huấn luyện
-    sil, sp = training_arrays(records)
-    if not len(sil) or not len(sp):
-        raise ValueError("Dữ liệu huấn luyện thiếu một trong hai lớp Speech hoặc Silence")
-
-    # Khối 2: Đóng gói cấu hình chung, chỉ tính thuật toán đang được chọn để demo.
-    model = {
-        "frame_ms": FRAME_MS,
-        "hop_ms": HOP_MS,
-        "minimum_silence_ms": 200,
-    }
+    # Khối 2: Binary dùng median riêng; Statistics dùng STE chuẩn hóa chưa median.
     if method is None or method == "binary":
-        model["binary_threshold"] = binary_threshold(sil, sp)
+        sil, sp = training_arrays(records, median_order)
+        model.update(binary_threshold=binary_threshold(sil, sp), median_order=median_order)
     if method is None or method == "statistical":
+        sil, sp = training_arrays(records)
         model["statistical_threshold"], model["statistics"] = gaussian_threshold(sil, sp)
 
-    # Khối 3: Chỉ Histogram cần cấu hình và ngưỡng dự phòng từ tập huấn luyện.
+    # Khối 3: Histogram khóa cấu hình; ngưỡng và fallback mean được tính trên từng WAV.
     if method is None or method == "histogram":
-        fallback_th = float(np.clip((np.median(sil) + np.median(sp)) / 2.0, 0.0, 1.0))
-        try:
-            fallback_th, _ = histogram_threshold(np.concatenate([sil, sp]), histogram)
-        except ValueError:
-            pass
-        model.update(histogram=asdict(histogram), histogram_fallback=fallback_th)
+        model["histogram"] = asdict(histogram or HistogramConfig())
     return model
 
 
 def predict(samples: np.ndarray, fs: int, model: dict, method: str,
             compute_f0: bool = True) -> tuple[Features, np.ndarray, float, bool]:
-    """Thực hiện phân đoạn Speech/Silence trên một tín hiệu âm thanh kiểm thử.
-
-    Hàm áp dụng ngưỡng tương ứng của thuật toán được chọn, sau đó lọc bỏ
-    khoảng lặng ảo có độ dài < 200 ms theo quy định đề tài.
-
-    Args:
-        samples: Mảng mẫu âm thanh của tệp WAV kiểm thử.
-        fs: Tần số lấy mẫu (Hz).
-        model: Từ điển tham số mô hình đã được huấn luyện.
-        method: Tên thuật toán cần dùng ('binary', 'histogram', hoặc 'statistical').
-        compute_f0: Cho biết có tính đường F0 hay không (mặc định True).
-
-    Returns:
-        tuple gồm (features, mask, threshold, fallback_used).
-    """
-    # Khối 1: Kiểm tra tính hợp lệ của phương pháp và trích xuất đặc trưng
+    """Nhận waveform/fs/mô hình, không nhận LAB; trả đặc trưng, mask, T và cờ fallback."""
+    # Khối 1: Mô hình phải cùng 25/10 ms và cửa sổ centered_hop_v1.
     if method not in METHODS:
         raise ValueError(f"Thuật toán không hợp lệ: {method}")
-
-    # Mô hình cũ có thể chứa ngưỡng học ở 20/30 ms, không tương thích đặc trưng mới.
-    if model.get("frame_ms") != FRAME_MS or model.get("hop_ms") != HOP_MS:
-        raise ValueError(f"Mô hình không dùng khung {FRAME_MS} ms / bước {HOP_MS} ms. "
-                         "Hãy huấn luyện lại bằng main.py trước khi dự đoán.")
-
-    features = extract(samples, fs, model["frame_ms"], model["hop_ms"], compute_f0=compute_f0)
+    if (model.get("frame_ms") != FRAME_MS or model.get("hop_ms") != HOP_MS
+            or model.get("feature_layout") != FEATURE_LAYOUT):
+        raise ValueError("Mô hình không dùng 25/10 ms và centered_hop_v1. Hãy huấn luyện lại.")
+    features = extract(samples, fs, FRAME_MS, HOP_MS, compute_f0=compute_f0)
     fallback_used = False
 
-    # Khối 2: Lấy giá trị ngưỡng tương ứng với từng thuật toán
+    # Khối 2: Chỉ Binary median; Histogram vẫn adaptive từ chính WAV đang xử lý.
     if method == "binary":
+        decision = median_filter(features.normalized_ste, model["median_order"])
         threshold = model["binary_threshold"]
     elif method == "statistical":
+        decision = features.normalized_ste
         threshold = model["statistical_threshold"]
     else:
-        # Histogram tính ngưỡng thích nghi trực tiếp trên tín hiệu kiểm thử
-        threshold, fallback_used = histogram_threshold(
-            features.normalized_ste,
-            HistogramConfig(**model["histogram"]),
-            model["histogram_fallback"]
-        )
+        decision = features.normalized_ste
+        threshold, fallback_used = histogram_threshold(decision, HistogramConfig(**model["histogram"]))
+    features = replace(features, decision_ste=decision)
 
-    # Khối 3: Phân đoạn ban đầu và loại bỏ khoảng lặng ảo dưới 200 ms
-    raw_mask = features.normalized_ste >= threshold
-    mask = remove_virtual_silence(raw_mask, features.edges, model["minimum_silence_ms"] / 1000.0)
-
+    # Khối 3: Zero-audio giữ Silence; không để >=0 hoặc lấp silence ngắn sinh speech giả.
+    raw_mask = decision >= threshold
+    if not np.any(samples):
+        mask = np.zeros(len(raw_mask), dtype=bool)
+    else:
+        mask = remove_virtual_silence(raw_mask, features.edges, model["minimum_silence_ms"] / 1000)
     return features, mask, float(threshold), fallback_used
 
 
 def choose(records: list[Record], only: str | None = None) -> tuple[dict, dict]:
-    """Đánh giá ở khung cố định 25/10 ms; chỉ Histogram tìm siêu tham số bằng Cross-Validation.
-
-    Args:
-        records: Danh sách các Record trong tập huấn luyện.
-        only: Thuật toán của sinh viên, hoặc None để so sánh cả ba.
-
-    Returns:
-        tuple gồm (models, validation_metrics) chỉ cho thuật toán được chọn, hoặc cả ba khi only=None.
-    """
-    # Khối 1: Khung/bước dịch là cấu hình cố định, không có trong không gian tìm kiếm.
-    configs = {
-        "binary": [HistogramConfig()],
-        "statistical": [HistogramConfig()],
-        "histogram": [HistogramConfig(b, s, w, distance, depth)
-                      for b in (32, 64, 128)
-                      for s in (1, 3, 5)
-                      for w in (2, 5, 10)
-                      for distance in (3, 6, 12)
-                      for depth in (0.2, 0.4)]
-    }
-
-    # Lưu ứng viên tốt nhất riêng cho từng thuật toán, không dùng dữ liệu kiểm thử.
-    selected: dict[str, HistogramConfig] = {}
-    validation: dict[str, dict] = {}
-
-    # Khối 2: Đánh giá Leave-One-Out trên từng ứng viên tham số
+    """Nhận TRAIN/phương pháp; trả mô hình và điểm hiệu chỉnh TRAIN, không phải LOO/TEST."""
+    # Khối 1: Không tìm frame/hop; Binary tìm median, Histogram chỉ tìm W.
+    if not records or (only is not None and only not in METHODS):
+        raise ValueError("Cần TRAIN không rỗng và thuật toán hợp lệ")
+    candidates = {"binary": MEDIAN_ORDERS, "histogram": HISTOGRAM_WEIGHTS, "statistical": (1,)}
+    models, calibration = {}, {}
     methods = (only,) if only else METHODS
     for method in methods:
-        candidates = configs[method]
-        best_score = None
-        for hist in candidates:
+        best_key = None
+        for candidate in candidates[method]:
+            histogram = HistogramConfig(weight=candidate) if method == "histogram" else None
+            median_order = candidate if method == "binary" else 1
+            model = fit(records, histogram, method=method, median_order=median_order)
+
+            # Khối 2: Chấm lại toàn TRAIN theo BT1; không gọi đây là hiệu suất độc lập.
             scores = []
-            for held_idx in range(len(records)):
-                train_subset = [r for i, r in enumerate(records) if i != held_idx]
-                val_record = records[held_idx]
-                fitted_model = fit(train_subset, hist, method=method)
-                feat, msk, _, _ = predict(val_record.samples, val_record.fs, fitted_model, method, compute_f0=False)
-                scores.append(score(val_record, feat, msk))
+            for record in records:
+                f, mask, _, _ = predict(record.samples, record.fs, model, method, compute_f0=False)
+                scores.append(score(record, f, mask))
+            mean_mae = float(np.mean([s["mae_ms"] if s["mae_ms"] is not None else float("inf")
+                                     for s in scores]))
 
-            # Khóa tối ưu: ưu tiên balanced_error, số biên lỗi, và MAE trung bình
-            key = (
-                round(float(np.mean([s["balanced_error"] for s in scores])), 10),
-                sum(s["missed"] + s["extra"] for s in scores),
-                np.mean([s["mae_ms"] if s["mae_ms"] is not None else 200 for s in scores]),
-                hist.bins, hist.smooth, hist.weight, hist.min_peak_distance, hist.min_valley_depth
-            )
-
-            if best_score is None or key < best_score:
-                best_score = key
-                selected[method] = hist
-                validation[method] = {
-                    "balanced_error": key[0],
-                    "boundary_misses": key[1],
-                    "mean_mae_ms": float(key[2])
+            # Khối 3: Ưu tiên biên lỗi, MAE rồi tham số nhỏ hơn; BER chỉ dùng báo cáo.
+            key = (sum(s["missed"] + s["extra"] for s in scores), round(mean_mae, 10), candidate)
+            if best_key is None or key < best_key:
+                best_key = key
+                models[method] = model
+                calibration[method] = {
+                    "protocol": TRAINING_PROTOCOL, "boundary_misses": key[0],
+                    "mean_mae_ms": mean_mae if np.isfinite(mean_mae) else None,
+                    "balanced_error": float(np.mean([s["balanced_error"] for s in scores])),
+                    "candidate_count": len(candidates[method]), "training_files": len(records),
                 }
-
-    # Khối 3: Huấn luyện lại trên toàn bộ tập dữ liệu huấn luyện với tham số tốt nhất
-    models = {method: fit(records, selected[method], method=method) for method in methods}
-    return models, validation
+    return models, calibration
 
 
 def plot_result(record: Record, method: str, features: Features, mask: np.ndarray,
@@ -247,7 +181,10 @@ def plot_result(record: Record, method: str, features: Features, mask: np.ndarra
     ax.grid(True, linestyle=":", alpha=0.5)
 
     # Khối 3: Subplot 2 — Năng lượng ngắn hạn (STE chuẩn hóa) và Ngưỡng phân đoạn
-    fx.plot(features.times, features.normalized_ste, color="#185a8d", lw=1.2, label="STE chuẩn hóa")
+    fx.plot(features.times, features.normalized_ste, color="0.65", lw=0.8, label="STE chuẩn hóa trước lọc")
+    decision = features.decision_ste if features.decision_ste is not None else features.normalized_ste
+    fx.plot(features.times, decision, color="#185a8d", lw=1.2,
+            label="STE sau median (so ngưỡng)" if method == "binary" else "STE so ngưỡng")
     fx.axhline(threshold, color="#e69f00", ls="--", lw=1.3, label=f"Ngưỡng T = {threshold:.4f}")
     fx.set_title(f"2. Năng lượng ngắn hạn chuẩn hóa (STE) & Ngưỡng — {METHOD_LABELS[method]}",
                  fontsize=10, fontweight="bold")
@@ -410,7 +347,9 @@ def plot_comparison(record: Record, predictions: dict[str, tuple[Features, np.nd
     # Khối 2: Subplot 2-4: Từng thuật toán phân đoạn
     for axis, method in zip(axes[1:4], METHODS):
         feat, msk = predictions[method]
-        axis.plot(feat.times, feat.normalized_ste, color="0.35", lw=0.8)
+        axis.plot(feat.times, feat.normalized_ste, color="0.65", lw=0.7)
+        decision = feat.decision_ste if feat.decision_ste is not None else feat.normalized_ste
+        axis.plot(feat.times, decision, color="#185a8d", lw=0.9)
         for left, right, speech in segments(msk, feat.edges):
             if speech:
                 axis.axvspan(left, right, color="#b7dfc0", alpha=0.5)
@@ -508,8 +447,11 @@ def run(root: Path, output: Path, only: str | None = None, noise: bool = True,
     Returns:
         None. Lưu bốn PNG, CSV và bình luận Markdown trong thư mục output.
     """
-    # Khối 1: Nạp dữ liệu huấn luyện và kiểm thử
+    # Khối 1: Nạp TRAIN, hiệu chỉnh và khóa mô hình trước khi đọc TEST.
     train = [read_record(p) for p in discover(root, "TinHieuHuanLuyen")]
+    if len(train) != 4:
+        raise ValueError(f"Yêu cầu đúng 4 WAV training, hiện tìm thấy {len(train)}")
+    models, calibration = choose(train, only=only)
     test = [read_record(p) for p in discover(root, "TinHieuKiemThu")]
     if len(test) != 4:
         raise ValueError(f"Demo yêu cầu đúng 4 WAV kiểm thử, hiện tìm thấy {len(test)}")
@@ -518,9 +460,8 @@ def run(root: Path, output: Path, only: str | None = None, noise: bool = True,
     # Khối 2: Huấn luyện và xác định ngưỡng tối ưu
     model_path = output / "tham_so_huan_luyen.json"
     # Chỉ huấn luyện thuật toán đang demo, không mượn mô hình của thành viên khác.
-    models, validation = choose(train, only=only)
     model_path.write_text(
-        json.dumps({"models": models, "validation": validation}, indent=2, ensure_ascii=False),
+        json.dumps({"models": models, "calibration": calibration}, indent=2, ensure_ascii=False),
         encoding="utf-8"
     )
 
@@ -533,7 +474,9 @@ def run(root: Path, output: Path, only: str | None = None, noise: bool = True,
 
     # Khối 3: Dự đoán trên 4 tệp kiểm thử và tạo các figure
     for file_idx, record in enumerate(test, 1):
-        print(f"\nTín hiệu: {record.name} | SNR nền ước lượng: {estimate_snr(record):.1f} dB")
+        snr = estimate_snr(record)
+        snr_text = f"{snr:.1f} dB" if snr is not None else "KXĐ"
+        print(f"\nTín hiệu: {record.name} | SNR nền ước lượng: {snr_text}")
         all_predictions = {}
 
         for method in methods:
@@ -583,6 +526,9 @@ def run(root: Path, output: Path, only: str | None = None, noise: bool = True,
 
     # Khối 4: Xuất các tệp báo cáo tổng hợp
     write_csv(output / "ket_qua.csv", rows)
+    summaries = [{"method": method, **summarize_scores([r for r in rows if r["method"] == method])}
+                 for method in methods]
+    write_csv(output / "tong_hop.csv", summaries)
     write_csv(output / "bien_du_doan.csv", boundaries)
     if noise:
         write_csv(output / "khao_sat_nhieu.csv", noise_rows)

@@ -41,85 +41,85 @@ def source_of(relative_path: str, names: list[str]) -> str:
 
 
 def specialized_training(method: str) -> str:
-    """Nhận tên thuật toán; trả mã fit/predict/CV riêng, tương đương phép tính trong repo."""
-    # Mỗi notebook có một phương pháp duy nhất, không mang mã hai phương pháp còn lại.
+    """Nhận phương pháp; trả fit/predict/hiệu chỉnh TRAIN riêng, tương đương chương trình Python."""
+    # Mỗi notebook chỉ mang nguồn thuật toán của một thành viên.
     fit_parts = {
-        "binary": 'model["binary_threshold"] = binary_threshold(sil, sp)',
-        "statistical": 'model["statistical_threshold"], model["statistics"] = gaussian_threshold(sil, sp)',
-        "histogram": '''fallback = float(np.clip((np.median(sil) + np.median(sp)) / 2.0, 0.0, 1.0))
-    try:
-        fallback, _ = histogram_threshold(np.concatenate([sil, sp]), config)
-    except ValueError:
-        pass
-    model.update(histogram=asdict(config), histogram_fallback=fallback)''',
+        "binary": '''sil, sp = training_arrays(records, config)
+    model.update(binary_threshold=binary_threshold(sil, sp), median_order=config)''',
+        "statistical": '''sil, sp = training_arrays(records)
+    model["statistical_threshold"], model["statistics"] = gaussian_threshold(sil, sp)''',
+        "histogram": 'model["histogram"] = asdict(config)',
     }
     prediction_parts = {
-        "binary": 'threshold = model["binary_threshold"]',
+        "binary": '''decision = median_filter(features.normalized_ste, model["median_order"])
+    threshold = model["binary_threshold"]''',
         "statistical": 'threshold = model["statistical_threshold"]',
-        "histogram": '''threshold, fallback_used = histogram_threshold(
-        features.normalized_ste, HistogramConfig(**model["histogram"]), model["histogram_fallback"]
-    )''',
+        "histogram": 'threshold, fallback_used = histogram_threshold(decision, HistogramConfig(**model["histogram"]))',
     }
-    candidates = ('[HistogramConfig(b, s, w, distance, depth)\n'
-                  '                  for b in (32, 64, 128) for s in (1, 3, 5)\n'
-                  '                  for w in (2, 5, 10) for distance in (3, 6, 12)\n'
-                  '                  for depth in (0.2, 0.4)]' if method == "histogram" else "[None]")
-    tie = ("(config.bins, config.smooth, config.weight, config.min_peak_distance, config.min_valley_depth)"
-           if method == "histogram" else "()")
+    candidates = {"binary": "MEDIAN_ORDERS",
+                  "histogram": "[HistogramConfig(weight=w) for w in HISTOGRAM_WEIGHTS]",
+                  "statistical": "[None]"}[method]
+    tie = {"binary": "config", "histogram": "config.weight", "statistical": "1"}[method]
     return f'''def fit_model(records: list[Record], config=None) -> dict:
-    """Nhận training và cấu hình nếu có; trả mô hình chỉ học từ các khung training có nhãn."""
-    # Khối 1: Gom STE và kiểm tra hai lớp trước khi học ngưỡng.
-    sil, sp = training_arrays(records)
-    if not len(sil) or not len(sp):
-        raise ValueError("Training phải có cả Speech và Silence")
-    model = {{"frame_ms": FRAME_MS, "hop_ms": HOP_MS, "minimum_silence_ms": MIN_SILENCE_MS}}
+    """Nhận TRAIN/cấu hình; trả mô hình khóa trước khi đọc TEST."""
+    # Khối 1: Ghi dấu cửa sổ và giao thức hiệu chỉnh để tránh dùng mô hình cũ.
+    model = {{"frame_ms": FRAME_MS, "hop_ms": HOP_MS, "minimum_silence_ms": MIN_SILENCE_MS,
+             "feature_layout": FEATURE_LAYOUT, "training_protocol": TRAINING_PROTOCOL}}
 
-    # Khối 2: Tính ngưỡng bằng thuật toán riêng của notebook này.
+    # Khối 2: Binary/Gaussian học T từ nhãn TRAIN; Histogram chỉ giữ cấu hình.
     {fit_parts[method]}
     return model
 
 
 def predict_signal(samples: np.ndarray, fs: int, model: dict,
                    compute_f0: bool = True) -> tuple[Features, np.ndarray, float, bool]:
-    """Nhận WAV/mô hình, không nhận LAB; trả đặc trưng, nhãn dự đoán, ngưỡng và cờ fallback."""
-    # Khối 1: Mô hình và đặc trưng phải cùng cấu hình 25/10 ms.
-    if model.get("frame_ms") != FRAME_MS or model.get("hop_ms") != HOP_MS:
-        raise ValueError("Cần huấn luyện lại mô hình ở 25/10 ms")
+    """Nhận waveform/fs/mô hình, không nhận LAB; trả đặc trưng, mask, T, cờ fallback."""
+    # Khối 1: Chỉ nhận mô hình centered_hop_v1 với khung 25/10 ms.
+    if (model.get("frame_ms") != FRAME_MS or model.get("hop_ms") != HOP_MS
+            or model.get("feature_layout") != FEATURE_LAYOUT):
+        raise ValueError("Cần huấn luyện lại mô hình ở 25/10 ms và centered_hop_v1")
     features = extract(samples, fs, FRAME_MS, HOP_MS, compute_f0=compute_f0)
+    decision = features.normalized_ste
     fallback_used = False
 
-    # Khối 2: Áp dụng ngưỡng, sau đó gộp Silence ảo ngắn hơn 200 ms.
+    # Khối 2: Đường so ngưỡng có median chỉ trong Binary; không chuẩn hóa lại.
     {prediction_parts[method]}
-    raw_mask = features.normalized_ste >= threshold
-    mask = remove_virtual_silence(raw_mask, features.edges, MIN_SILENCE_MS / 1000)
+    features = replace(features, decision_ste=decision)
+    raw_mask = decision >= threshold
+
+    # Khối 3: Zero-audio giữ Silence, còn lại gộp Silence dưới 200 ms.
+    if not np.any(samples):
+        mask = np.zeros(len(raw_mask), dtype=bool)
+    else:
+        mask = remove_virtual_silence(raw_mask, features.edges, MIN_SILENCE_MS / 1000)
     return features, mask, float(threshold), fallback_used
 
 
 def train_model(records: list[Record]) -> tuple[dict, dict]:
-    """Nhận bốn WAV training; trả mô hình cuối và chỉ số kiểm chứng chéo, không dùng test."""
-    # Khối 1: Không khảo sát frame; chỉ Histogram có tập cấu hình riêng để chọn.
+    """Nhận bốn TRAIN; trả mô hình/điểm hiệu chỉnh trên TRAIN, không phải LOO hoặc TEST."""
+    # Khối 1: Binary khảo sát bậc median; Histogram khảo sát W; Statistics fit một lần.
     candidates = {candidates}
-    best_key, best_config, validation = None, None, None
+    best_key, best_model, calibration = None, None, None
     for config in candidates:
+        model = fit_model(records, config)
         scores = []
-        for held in range(len(records)):
-            training = [r for i, r in enumerate(records) if i != held]
-            model = fit_model(training, config)
 
-            # Khối 2: Kiểm chứng bằng WAV giữ lại trong training, không phải WAV test.
-            record = records[held]
+        # Khối 2: Chấm trên toàn TRAIN như BT1; điểm này không là đánh giá độc lập.
+        for record in records:
             f, mask, _, _ = predict_signal(record.samples, record.fs, model, compute_f0=False)
             scores.append(score(record, f, mask))
-        tie = {tie}
-        key = (round(float(np.mean([s["balanced_error"] for s in scores])), 10),
-               sum(s["missed"] + s["extra"] for s in scores),
-               np.mean([s["mae_ms"] if s["mae_ms"] is not None else 200 for s in scores])) + tie
+        mean_mae = float(np.mean([s["mae_ms"] if s["mae_ms"] is not None else float("inf")
+                                 for s in scores]))
+        key = (sum(s["missed"] + s["extra"] for s in scores), round(mean_mae, 10), {tie})
 
-        # Khối 3: Chọn theo training rồi học lại bằng tất cả bốn bản ghi training.
+        # Khối 3: Biên lỗi -> MAE -> tham số nhỏ hơn; BER chỉ dùng báo cáo.
         if best_key is None or key < best_key:
-            best_key, best_config = key, config
-            validation = {{"balanced_error": key[0], "boundary_misses": key[1], "mean_mae_ms": float(key[2])}}
-    return fit_model(records, best_config), validation
+            best_key, best_model = key, model
+            calibration = {{"protocol": TRAINING_PROTOCOL, "boundary_misses": key[0],
+                           "mean_mae_ms": mean_mae if np.isfinite(mean_mae) else None,
+                           "balanced_error": float(np.mean([s["balanced_error"] for s in scores])),
+                           "candidate_count": len(candidates), "training_files": len(records)}}
+    return best_model, calibration
 '''
 
 
@@ -134,14 +134,12 @@ SUMMARY_AND_MAIN = '''def display_summary(rows: list[dict]) -> dict:
                      f'{format_metric(row["rmse_ms"])} | {row["matched"]}/{row["extra"]}/{row["missed"]} | '
                      f'{row["balanced_error"]:.4f} |')
 
-    # Khối 2: Gộp theo số cặp ghép; không lấy trung bình RMSE của từng WAV.
-    count = sum(row["matched"] for row in rows)
-    mae = sum(row["mae_ms"] * row["matched"] for row in rows if row["mae_ms"] is not None) / count if count else None
-    rmse = np.sqrt(sum(row["rmse_ms"] ** 2 * row["matched"] for row in rows
-                       if row["rmse_ms"] is not None) / count) if count else None
-    pooled = {"mae_ms": mae, "rmse_ms": float(rmse) if rmse is not None else None,
-              "matched": count, "extra": sum(r["extra"] for r in rows), "missed": sum(r["missed"] for r in rows)}
-    lines.append(f'| **Gộp biên** | | **{format_metric(mae)}** | **{format_metric(rmse)}** | '
+    # Khối 2: Phân biệt trung bình theo file với gộp các cặp biên.
+    pooled = summarize_scores(rows)
+    lines.append(f'| **Trung bình theo file** | | **{format_metric(pooled["mean_file_mae_ms"])}** | '
+                 f'**{format_metric(pooled["mean_file_rmse_ms"])}** | | |')
+    lines.append(f'| **Gộp biên** | | **{format_metric(pooled["pooled_mae_ms"])}** | '
+                 f'**{format_metric(pooled["pooled_rmse_ms"])}** | '
                  f'{pooled["matched"]}/{pooled["extra"]}/{pooled["missed"]} | |')
     display(Markdown("\\n".join(lines)))
     return pooled
@@ -158,9 +156,9 @@ def main() -> dict:
     print("Training:", ", ".join(r.name + ".wav" for r in training))
 
     # Khối 2: Học và khóa tham số trước khi dùng test; in rõ mô hình đã học.
-    model, validation = train_model(training)
-    display(Markdown("### Tham số học từ training và kết quả kiểm chứng chéo"))
-    print(json.dumps({"model": model, "validation": validation}, ensure_ascii=False, indent=2))
+    model, calibration = train_model(training)
+    display(Markdown("### Tham số học và điểm hiệu chỉnh trên TRAIN (không phải LOO/TEST)"))
+    print(json.dumps({"model": model, "calibration": calibration}, ensure_ascii=False, indent=2))
     test = [read_record(p) for p in discover(DATA_ROOT, "TinHieuKiemThu")]
     if len(test) != 4:
         raise ValueError("Bài thực nghiệm yêu cầu đúng bốn WAV test")
@@ -181,7 +179,7 @@ def main() -> dict:
                            "metrics": metrics, "fallback": fallback}}
         display(Markdown("\\n".join(figure_comments(record, result, METHOD_LABELS))))
     pooled = display_summary(rows)
-    return {"model": model, "validation": validation, "rows": rows, "pooled": pooled, "test_records": test}
+    return {"model": model, "calibration": calibration, "rows": rows, "pooled": pooled, "test_records": test}
 '''
 
 
@@ -234,13 +232,12 @@ def build_notebook(method: str, student: str, folder: str, label: str):
              "Notebook chứa mã và kết quả thực thi sẵn. Mở để đọc kết quả không cần WAV. "
              "Để chạy lại, cung cấp dữ liệu ngoài notebook và chỉnh DATA_ROOT. Không nộp WAV/LAB cùng file này.\n\n"
              "Khung 25 ms, bước dịch 10 ms, Silence tối thiểu 200 ms. "
-             "LAB training dùng để học/kiểm chứng; LAB test chỉ đánh giá và vẽ biên chuẩn.")
+             "LAB training dùng để hiệu chỉnh theo BT1; LAB test chỉ đánh giá và vẽ biên chuẩn.")
     markdown("## 1. Thư viện và cấu hình\n\nChỉ dùng NumPy và thư viện chuẩn để xử lý tín hiệu. "
              "Matplotlib/IPython phục vụ vẽ và lưu kết quả hiển thị trong notebook.")
     code(f'''from __future__ import annotations
 
-from dataclasses import dataclass, asdict
-from functools import lru_cache
+from dataclasses import dataclass, asdict, replace
 from pathlib import Path
 import json
 import math
@@ -255,6 +252,9 @@ from matplotlib_inline.backend_inline import set_matplotlib_formats
 get_ipython().run_line_magic("matplotlib", "inline")
 set_matplotlib_formats("png")
 FRAME_MS, HOP_MS, MIN_SILENCE_MS = 25, 10, 200
+FEATURE_LAYOUT, TRAINING_PROTOCOL = "centered_hop_v1", "train_calibration"
+MEDIAN_ORDERS = (1, 5, 9, 11, 15, 21)
+HISTOGRAM_WEIGHTS = (1, 2, 5, 10, 15, 20, 30, 50)
 METHOD, STUDENT = {method!r}, {student!r}
 METHOD_LABELS = {{METHOD: {label!r}}}
 
@@ -266,31 +266,33 @@ DATA_ROOT = Path.cwd()
              "sil là Silence, v/uv là Speech. Nhãn khung lấy theo tâm khung; bỏ phần chưa có nhãn.")
     code(source_of("speech_silence/data.py", ["Interval", "Record", "discover", "read_labels", "read_record", "speech_at", "reference_boundaries"]))
     markdown("## 3. Đặc trưng ngắn hạn, F0 và hậu xử lý\n\nTính STE/MA trực tiếp từ mẫu; "
-             "STE chuẩn hóa theo cực đại của mỗi WAV. F0 minh họa bằng tự tương quan; "
-             "không dùng F0 để tìm ngưỡng. Silence dự đoán dưới 200 ms chuyển thành Speech.")
-    code(source_of("speech_silence/features.py", ["Features", "extract", "estimate_f0", "remove_virtual_silence", "segments", "predicted_boundaries"]))
+             "cửa sổ 25 ms căn giữa ô quyết định 10 ms, tâm đầu 5 ms. Mép WAV chỉ dùng mẫu thật, "
+             "không đệm zero; STE chuẩn hóa theo cực đại mỗi WAV. F0 minh họa bằng tự tương quan, "
+             "không dùng tìm ngưỡng. Silence dưới 200 ms chuyển thành Speech, riêng zero-audio luôn Silence.")
+    code(source_of("speech_silence/features.py", ["Features", "extract", "estimate_f0", "median_filter", "remove_virtual_silence", "segments", "predicted_boundaries"]))
     explanations = {
-        "binary": "Hai nhóm STE có nhãn từ cả bốn WAV training được gom để học một ngưỡng chung. "
-                  "Chia đôi miền ngưỡng đến khi độ rộng nhỏ hơn 10⁻⁸. Tiêu chí cân bằng độ lệch năng lượng, không chỉ đếm khung sai.",
-        "histogram": "Training chỉ chọn cấu hình/fallback; ngưỡng chính tính adaptive trên mỗi WAV. "
-                     "Xét đỉnh bin 0, vị trí vùng nền, valley và khoảng cách giữa đỉnh. Giả định năng lượng nền thấp có giới hạn khi hai lớp chồng lấn.",
+        "binary": "TRAIN chọn median trong [1,5,9,11,15,21]; median sau chuẩn hóa, không chuẩn hóa lại. "
+                  "Chỉ giữ mẫu thuộc overlap rồi cân bằng mean diện tích nhầm bằng chia đôi (tolerance 10⁻¹⁰).",
+        "histogram": "TRAIN chọn W trong [1,2,5,10,15,20,30,50], cố định 128 bins và trơn 3 bins. "
+                     "Hai cực đại đầu theo trục STE xác định ngưỡng riêng từng WAV; thiếu đỉnh dùng mean của WAV.",
         "statistical": "Ước lượng mean/std của hai nhóm normalized STE training, giả thiết Gaussian. "
-                       "Chọn một ngưỡng chung có lỗi kỳ vọng cân bằng nhỏ nhất. Các thống kê và ngưỡng được in ở phần kết quả.",
+                       "Chọn giao điểm giữa hai mean; fallback trọng số std. Các thống kê và ngưỡng được in ở phần kết quả.",
     }
     markdown(f"## 4. Thuật toán {label}\n\n{explanations[method]}")
     names = {"binary": ["binary_threshold"],
              "histogram": ["HistogramConfig", "smooth_1d", "histogram_local_maxima", "histogram_peak_pair", "histogram_threshold"],
              "statistical": ["normal_cdf", "gaussian_threshold"]}[method]
     code(source_of(f"{folder}/algorithm.py", names))
-    markdown("## 5. Đánh giá biên và lỗi phân lớp\n\nGhép biên cùng hướng, một-một theo thứ tự; "
+    markdown("## 5. Đánh giá biên và lỗi phân lớp\n\nGhép greedy các cặp biên cùng hướng, gần nhất trước; "
              "không áp dụng dung sai 200 ms khi ghép. MAE/RMSE tính bằng ms trên các cặp ghép. "
              "Luôn báo thêm biên thừa/thiếu vì chúng không đi vào MAE của cặp đã ghép.")
-    code(source_of("speech_silence/evaluation.py", ["boundary_scores", "score", "estimate_snr"]))
+    code(source_of("speech_silence/evaluation.py", ["boundary_scores", "summarize_scores", "score", "estimate_snr"]))
     markdown("## 6. Huấn luyện và khóa tham số\n\nKhung luôn cố định 25/10 ms. "
-             "Kiểm chứng chéo chỉ dùng bốn WAV training. Sau kiểm chứng, học lại từ toàn training trước khi đọc test.")
+             "Hiệu chỉnh trên toàn bốn TRAIN theo biên thừa/thiếu, MAE, tham số nhỏ hơn. "
+             "Không dùng LOO; điểm TRAIN không là hiệu suất độc lập. Khóa mô hình trước khi đọc TEST.")
     code(source_of("speech_silence/pipeline.py", ["training_arrays"]) + "\n\n\n" + specialized_training(method))
     markdown("## 7. Hàm vẽ hình và tạo bình luận\n\nMỗi WAV có một hình với waveform, "
-             "normalized STE/ngưỡng, logSTE/logMA, F0. Biên dự đoán xanh, biên chuẩn đỏ. "
+             "STE trước/sau median nếu có, ngưỡng, logSTE/logMA, F0. Biên dự đoán xanh, biên chuẩn đỏ. "
              "F0mean LAB chỉ là thống kê tham chiếu, không phải đường F0 chuẩn từng khung.")
     plotting = source_of("speech_silence/pipeline.py", ["plot_result"])
     plotting = plotting.replace("Biên đúng/thừa/thiếu", "Biên ghép/thừa/thiếu")
@@ -311,11 +313,13 @@ DATA_ROOT = Path.cwd()
     markdown("## 11. Kết luận và giới hạn\n\nĐọc MAE/RMSE cùng số biên thừa/thiếu. "
              "Các nguyên nhân sai trong bình luận là diễn giải từ STE và hậu xử lý, không phải chứng minh nhân quả duy nhất. "
              "Dữ liệu chỉ có bốn WAV test và mỗi WAV hiện có một vùng Speech nhị phân; "
-             "kết quả chưa đại diện cho mọi cuộc hội thoại hay môi trường thu âm.")
+             "kết quả chưa đại diện cho mọi cuộc hội thoại hay môi trường thu âm. "
+             "Triển khai theo báo cáo BT1, không có mã BT1 gốc; bộ tám W, median lặp mép và quy tắc phụ "
+             "chọn nghiệm Gaussian là các mặc định đã chốt khi tái tạo.")
     code('''# Tóm tắt từ đúng các kết quả vừa tính, không chép số liệu cố định.
 p = RESULT["pooled"]
-display(Markdown(f'**{METHOD_LABELS[METHOD]}**: MAE gộp **{format_metric(p["mae_ms"])} ms**, '
-                 f'RMSE **{format_metric(p["rmse_ms"])} ms**; '
+display(Markdown(f'**{METHOD_LABELS[METHOD]}**: MAE gộp **{format_metric(p["pooled_mae_ms"])} ms**, '
+                 f'RMSE **{format_metric(p["pooled_rmse_ms"])} ms**; '
                  f'biên ghép/thừa/thiếu **{p["matched"]}/{p["extra"]}/{p["missed"]}**.'))''')
     nb = nbformat.v4.new_notebook(cells=cells)
     nb.metadata.kernelspec = {"name": "python3", "display_name": "Python 3", "language": "python"}
@@ -326,8 +330,8 @@ def compare_snapshot(snapshot: dict, folder: str) -> None:
     """Nhận kết quả kernel và thư mục baseline; báo lỗi nếu số liệu khác chương trình hiện hành."""
     package = json.loads((ROOT / folder / "ket_qua/tham_so_huan_luyen.json").read_text())
     expected_model = next(iter(package["models"].values()))
-    if snapshot["model"] != expected_model or snapshot["validation"] != next(iter(package["validation"].values())):
-        raise ValueError(f"Mô hình hoặc kiểm chứng chéo khác baseline: {folder}")
+    if snapshot["model"] != expected_model or snapshot["calibration"] != next(iter(package["calibration"].values())):
+        raise ValueError(f"Mô hình hoặc hiệu chỉnh TRAIN khác baseline: {folder}")
     with (ROOT / folder / "ket_qua/ket_qua.csv").open(encoding="utf-8-sig") as stream:
         rows = list(csv.DictReader(stream))
     for expected, actual in zip(rows, snapshot["rows"], strict=True):
@@ -336,6 +340,15 @@ def compare_snapshot(snapshot: dict, folder: str) -> None:
         for key in ("threshold", "mae_ms", "rmse_ms", "matched", "missed", "extra", "balanced_error"):
             if abs(float(expected[key]) - actual[key]) > 1e-10:
                 raise ValueError(f"Sai số liệu {folder}/{actual['wav']}/{key}")
+    # Đối chiếu cả mean-file/pooled để không nhầm hai kiểu tổng hợp RMSE.
+    with (ROOT / folder / "ket_qua/tong_hop.csv").open(encoding="utf-8-sig") as stream:
+        summary = next(csv.DictReader(stream))
+    for key, actual in snapshot["summary"].items():
+        if actual is None:
+            if summary[key] != "":
+                raise ValueError(f"Tổng hợp khác baseline: {folder}/{key}")
+        elif abs(float(summary[key]) - actual) > 1e-10:
+            raise ValueError(f"Tổng hợp khác baseline: {folder}/{key}")
     # Đối chiếu cả bảng khảo sát nhiễu; đây là đánh giá sau chạy, không chọn lại tham số.
     with (ROOT / folder / "ket_qua/khao_sat_nhieu.csv").open(encoding="utf-8-sig") as stream:
         baseline_noise = list(csv.DictReader(stream))
@@ -351,6 +364,8 @@ def validate_notebook(nb, filename: str, expected_count: int = 4) -> dict:
     """Nhận notebook đã chạy; kiểm tra output, imports và không có âm thanh/dữ liệu nhúng."""
     nbformat.validate(nb)
     code_cells = [c for c in nb.cells if c.cell_type == "code"]
+    if len(code_cells) != 11:
+        raise ValueError("Notebook phải giữ đủ 11 cell mã của bài riêng")
     if [c.execution_count for c in code_cells] != list(range(1, len(code_cells) + 1)):
         raise ValueError("Cell chưa được chạy tuần tự từ kernel mới")
     allowed = {"__future__", "dataclasses", "functools", "pathlib", "json", "math", "wave", "numpy", "matplotlib", "matplotlib_inline", "IPython"}
@@ -400,8 +415,8 @@ def main() -> None:
         print(f"Đang tạo và chạy: {student} — {label}", flush=True)
         nb = build_notebook(method, student, folder, label)
         audit = nbformat.v4.new_code_cell('print(json.dumps({"model": RESULT["model"], '
-                                        '"validation": RESULT["validation"], "rows": RESULT["rows"], '
-                                        '"noise": NOISE_SUMMARY}, ensure_ascii=False))')
+                                        '"calibration": RESULT["calibration"], "rows": RESULT["rows"], '
+                                        '"summary": RESULT["pooled"], "noise": NOISE_SUMMARY}, ensure_ascii=False))')
         nb.cells.append(audit)
         client = NotebookClient(nb, timeout=600, kernel_name="xlths-notebooks",
                                 resources={"metadata": {"path": str(ROOT)}}, allow_errors=False)
@@ -419,7 +434,7 @@ def main() -> None:
         records.append(report)
         (BUILD / f"{method}_snapshot.json").write_text(json.dumps(snapshot, indent=2, ensure_ascii=False), encoding="utf-8")
         print(f"Đạt: {filename}; {report['code_cells']} cell đã chạy, 4 hình, khớp baseline.", flush=True)
-    (BUILD / "validation.json").write_text(json.dumps(records, ensure_ascii=False, indent=2), encoding="utf-8")
+    (BUILD / "notebook_checks.json").write_text(json.dumps(records, ensure_ascii=False, indent=2), encoding="utf-8")
     print(f"Thư mục nộp notebook: {SUBMISSION}", flush=True)
 
 

@@ -34,7 +34,7 @@ def gaussian_threshold(silence: np.ndarray, speech: np.ndarray) -> tuple[float, 
 
     Mô hình hóa phân bố normalized STE của Silence và Speech dưới dạng 2 phân bố chuẩn
     N(meanSil, stdSil) và N(meanSp, stdSp). Giải nghiệm giao điểm của 2 hàm mật độ xác suất
-    và chọn nghiệm làm cực tiểu hóa tổng lỗi phân lớp Bayes.
+    và chọn giao điểm giữa hai mean theo mô tả BT1; fallback dùng trọng số std.
 
     Args:
         silence: Mảng normalized STE của các khung khoảng lặng từ tập huấn luyện.
@@ -52,7 +52,7 @@ def gaussian_threshold(silence: np.ndarray, speech: np.ndarray) -> tuple[float, 
     # Khối 2: Ước lượng kỳ vọng và độ lệch chuẩn của từng phân bố
     ms, mp = float(np.mean(silence)), float(np.mean(speech))
     ss, sp = float(np.std(silence)), float(np.std(speech))
-    sd_s, sd_p = max(ss, 1e-6), max(sp, 1e-6)
+    sd_s, sd_p = max(ss, 1e-8), max(sp, 1e-8)
 
     # Khối 3: Thiết lập phương trình bậc hai xác định giao điểm 2 hàm mật độ Gaussian
     # f_sil(x) = f_sp(x) <=> a*x^2 + b*x + c = 0
@@ -60,19 +60,16 @@ def gaussian_threshold(silence: np.ndarray, speech: np.ndarray) -> tuple[float, 
     b = -2 * mp / sd_p**2 + 2 * ms / sd_s**2
     c = mp**2 / sd_p**2 - ms**2 / sd_s**2 - 2 * np.log(sd_s / sd_p)
 
-    # Khối 4: Tìm các nghiệm thực của phương trình nằm trong miền hợp lệ [0, 1]
-    candidates = [0.0, 1.0]
+    # Khối 4: Ưu tiên giao điểm giữa hai mean; khi hòa chọn nghiệm nhỏ hơn.
     roots = np.roots([a, b, c]) if abs(a) > 1e-12 else ([-c / b] if abs(b) > 1e-12 else [])
-    candidates.extend(float(np.real(x)) for x in roots
-                      if abs(np.imag(x)) < 1e-9 and 0 <= np.real(x) <= 1)
-
-    # Khối 5: Chọn nghiệm có tổng sai số phân lớp nhỏ nhất dựa trên normal_cdf tự viết
-    def total_error(th: float) -> float:
-        """Tính lỗi kỳ vọng hai lớp cho ngưỡng th; trả về xác suất lỗi cân bằng."""
-        # P(lỗi) = [P(Sil > th) + P(Sp < th)] / 2
-        return ((1.0 - normal_cdf(th, ms, sd_s)) + normal_cdf(th, mp, sd_p)) / 2.0
-
-    best_threshold = min(candidates, key=total_error)
+    candidates = [float(np.real(x)) for x in roots
+                  if abs(np.imag(x)) < 1e-9 and min(ms, mp) <= np.real(x) <= max(ms, mp)]
+    midpoint = (ms + mp) / 2
+    if candidates:
+        best_threshold = min(candidates, key=lambda x: (abs(x - midpoint), x))
+    else:
+        # Khối 5: Phân phối suy biến/không có giao phù hợp dùng ngưỡng trọng số std.
+        best_threshold = (ms * sd_p + mp * sd_s) / (sd_s + sd_p)
 
     # Khối 6: Đóng gói tham số thống kê trả về
     stats = {

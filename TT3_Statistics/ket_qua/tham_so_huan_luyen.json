@@ -4,22 +4,27 @@
       "frame_ms": 25,
       "hop_ms": 10,
       "minimum_silence_ms": 200,
-      "statistical_threshold": 0.002868194105314271,
+      "feature_layout": "centered_hop_v1",
+      "training_protocol": "train_calibration",
+      "statistical_threshold": 0.00276341658111961,
       "statistics": {
-        "meanSil": 0.000384032519991615,
-        "stdSil": 0.0007072811435790515,
-        "meanSp": 0.20264889816756274,
-        "stdSp": 0.23562613277402938,
-        "nSil": 501,
+        "meanSil": 0.00036881104523860185,
+        "stdSil": 0.0006813762384317084,
+        "meanSp": 0.19669020074367452,
+        "stdSp": 0.22855395360434236,
+        "nSil": 503,
         "nSp": 794
       }
     }
   },
-  "validation": {
+  "calibration": {
     "statistical": {
-      "balanced_error": 0.0161716527,
+      "protocol": "train_calibration",
       "boundary_misses": 0,
-      "mean_mae_ms": 19.99999999999999
+      "mean_mae_ms": 11.249999999999954,
+      "balanced_error": 0.008424296532827518,
+      "candidate_count": 1,
+      "training_files": 4
     }
   }
 }

@@ -30,6 +30,7 @@ class Features:
         log_ma: Mức biên độ tính theo thang logarithmic (dB).
         f0: Tần số cơ bản F0 ước lượng theo Hz (khung vô thanh/silence nhận NaN).
         edges: Các mốc biên thời gian bắt đầu và kết thúc của các khung (giây).
+        decision_ste: STE dùng so ngưỡng; Binary lọc median sau chuẩn hóa, không chuẩn hóa lại.
     """
     times: np.ndarray
     ste: np.ndarray
@@ -39,6 +40,7 @@ class Features:
     log_ma: np.ndarray
     f0: np.ndarray
     edges: np.ndarray
+    decision_ste: np.ndarray | None = None
 
 
 def extract(samples: np.ndarray, fs: int, frame_ms: int, hop_ms: int = HOP_MS,
@@ -64,15 +66,20 @@ def extract(samples: np.ndarray, fs: int, frame_ms: int, hop_ms: int = HOP_MS,
     if len(samples) == 0:
         raise ValueError("Tín hiệu WAV rỗng, không thể trích xuất đặc trưng")
 
-    # Khối 2: Đệm zero cho phần đuôi và chia khung bằng sliding window
+    # Khối 2: Ô quyết định dài một hop; cửa sổ phân tích căn giữa tâm ô.
+    # Khung danh định vẫn 25 ms, nhưng ở mép chỉ tính trên mẫu thật trong WAV.
     starts = np.arange(0, len(samples), hop_len)
-    padded = np.pad(samples, (0, frame_len))
-    frames = np.lib.stride_tricks.sliding_window_view(padded, frame_len)[starts]
+    edges = np.r_[starts / fs, len(samples) / fs]
+    times = (edges[:-1] + edges[1:]) / 2
+    frames = []
+    for time in times:
+        left = round((time - frame_ms / 2000) * fs)
+        frames.append(samples[max(0, left):min(len(samples), left + frame_len)])
 
     # Khối 3: Tính toán Short-Time Energy (STE) và Short-Time Magnitude (MA)
-    # STE = (1/N) * sum(x[n]^2); MA = (1/N) * sum(|x[n]|)
-    ste = np.mean(frames * frames, axis=1)
-    ma = np.mean(np.abs(frames), axis=1)
+    # STE = mean(x^2), MA = mean(|x|); mẫu số là số mẫu thật của từng cửa sổ.
+    ste = np.asarray([np.mean(frame * frame) for frame in frames])
+    ma = np.asarray([np.mean(np.abs(frame)) for frame in frames])
 
     # Khối 4: Chuẩn hóa STE về khoảng [0, 1] theo giá trị cực đại của bản ghi
     max_ste = float(np.max(ste))
@@ -83,14 +90,11 @@ def extract(samples: np.ndarray, fs: int, frame_ms: int, hop_ms: int = HOP_MS,
     log_ste = 10 * np.log10(np.maximum(ste, 1e-12))
     log_ma = 20 * np.log10(np.maximum(ma, 1e-12))
 
-    # Khối 6: Xác định mốc thời gian trung tâm và các mốc biên khung
-    edges = np.r_[starts / fs, len(samples) / fs]
-    times = (starts + np.minimum(frame_len, len(samples) - starts) / 2) / fs
-
-    return Features(times, ste, ma, normalized_ste, log_ste, log_ma, f0, edges)
+    # Khối 6: Ngưỡng mặc định dùng STE chuẩn hóa; Binary thay bằng đường median riêng.
+    return Features(times, ste, ma, normalized_ste, log_ste, log_ma, f0, edges, normalized_ste)
 
 
-def estimate_f0(frames: np.ndarray, fs: int, normalized_ste: np.ndarray,
+def estimate_f0(frames: list[np.ndarray] | np.ndarray, fs: int, normalized_ste: np.ndarray,
                 minimum_hz: float = 60.0, maximum_hz: float = 400.0) -> np.ndarray:
     """Ước lượng đường tần số cơ bản F0 qua hàm tự tương quan ngắn hạn (Autocorrelation).
 
@@ -98,7 +102,7 @@ def estimate_f0(frames: np.ndarray, fs: int, normalized_ste: np.ndarray,
     các khung khoảng lặng hoặc âm vô thanh sẽ nhận giá trị NaN.
 
     Args:
-        frames: Mảng 2D kích thước (số khung, độ dài khung) chứa các mẫu tín hiệu từng khung.
+        frames: Các cửa sổ mẫu thật; cửa sổ ở mép có thể ngắn hơn cửa sổ giữa WAV.
         fs: Tần số lấy mẫu (Hz).
         normalized_ste: Mảng 1D normalized STE tương ứng của từng khung.
         minimum_hz: Giới hạn tần số cơ bản dưới (Hz, mặc định 60 Hz).
@@ -109,18 +113,17 @@ def estimate_f0(frames: np.ndarray, fs: int, normalized_ste: np.ndarray,
     """
     # Khối 1: Xác định khoảng trễ (lag) tìm kiếm tương ứng dải tần số F0
     min_lag = max(1, int(fs / maximum_hz))
-    max_lag = min(frames.shape[1] - 1, int(fs / minimum_hz))
     result = np.full(len(frames), np.nan)
-    window = np.hamming(frames.shape[1])
 
     # Khối 2: Duyệt qua từng khung tín hiệu để tính hàm tự tương quan
     for index, frame in enumerate(frames):
         # Bỏ qua các khung có năng lượng quá thấp (tiếng ồn nền hoặc khoảng lặng)
-        if normalized_ste[index] < 0.01:
+        max_lag = min(len(frame) - 1, int(fs / minimum_hz))
+        if normalized_ste[index] < 0.01 or max_lag < min_lag:
             continue
 
         # Cân bằng mức DC và nhân cửa sổ Hamming để giảm hiện tượng rò rỉ phổ
-        centered = (frame - np.mean(frame)) * window
+        centered = (frame - np.mean(frame)) * np.hamming(len(frame))
 
         # Khối 3: Tính nhanh hàm tự tương quan ngắn hạn thông qua FFT và IFFT
         fft_size = 1 << (2 * len(centered) - 1).bit_length()
@@ -138,6 +141,23 @@ def estimate_f0(frames: np.ndarray, fs: int, normalized_ste: np.ndarray,
             result[index] = fs / best_lag
 
     return result
+
+
+def median_filter(values: np.ndarray, order: int) -> np.ndarray:
+    """Nhận chuỗi STE và bậc lẻ dương; trả median trượt, lặp giá trị mép, không chuẩn hóa lại."""
+    # Khối 1: Bậc 1 giữ nguyên tín hiệu; không chấp nhận cửa sổ rỗng/chẵn.
+    if order < 1 or order % 2 == 0 or not len(values):
+        raise ValueError("Median cần bậc lẻ dương và chuỗi không rỗng")
+    if order == 1:
+        return values.copy()
+    radius = order // 2
+    padded = np.pad(values, radius, mode="edge")
+
+    # Khối 2: Tự duyệt cửa sổ; trung vị lấy bằng phép NumPy cơ bản.
+    filtered = np.empty(len(values), dtype=float)
+    for index in range(len(values)):
+        filtered[index] = np.median(padded[index:index + order])
+    return filtered
 
 
 def remove_virtual_silence(mask: np.ndarray, edges: np.ndarray, minimum_s: float = 0.2) -> np.ndarray:

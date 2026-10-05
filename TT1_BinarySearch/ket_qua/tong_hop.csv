@@ -1,0 +1,2 @@
+﻿method,files,files_with_matched_boundaries,matched,extra,missed,mean_file_mae_ms,mean_file_rmse_ms,pooled_mae_ms,pooled_rmse_ms
+binary,4,4,8,0,0,11.249999999999984,14.874368670764545,11.249999999999982,22.0794021658195

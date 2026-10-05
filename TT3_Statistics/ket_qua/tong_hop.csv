@@ -1,0 +1,2 @@
+﻿method,files,files_with_matched_boundaries,matched,extra,missed,mean_file_mae_ms,mean_file_rmse_ms,pooled_mae_ms,pooled_rmse_ms
+statistical,4,4,8,0,0,8.750000000000007,9.988380981143221,8.750000000000007,10.606601717798222
