@@ -1,6 +1,6 @@
 # Group 03 - Speaker notes
 
-Current deck: `Group03_Coding_Workshop_FINAL_v2.pptx`.
+Current deck: `Slide_Chung_Nhom03.pptx`.
 
 | Presenter | Slides | Responsibility |
 |---|---|---|

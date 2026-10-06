@@ -112,7 +112,7 @@ Thiết kế dùng phong cách Coding Workshop của Slidesgo: nền sáng, tiê
 
 Bản có thể chỉnh sửa và tài liệu hỗ trợ nằm ngoài thư mục nộp:
 
-- `output/slides/Group03_Coding_Workshop_FINAL_v2.pptx`: bản hiện hành; text, sơ đồ và bảng so sánh chỉnh sửa được.
+- `output/slides/Slide_Chung_Nhom03.pptx`: bản hiện hành; text, sơ đồ và bảng so sánh chỉnh sửa được.
 - `output/slides/Speaker_Notes_Nhom03.md`: lời nói ngắn bằng tiếng Anh, mỗi người dưới 3 phút dự kiến.
 - `output/slides/Canva_Prompt_Nhom03.txt`: nội dung chi tiết 22 slide và phong cách Coding Workshop; người dùng thêm ảnh bằng tay.
 
