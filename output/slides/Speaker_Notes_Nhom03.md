@@ -1,5 +1,13 @@
 # Group 03 - Speaker notes
 
+Current deck: `Group03_Coding_Workshop_FINAL_v2.pptx`.
+
+| Presenter | Slides | Responsibility |
+|---|---|---|
+| Võ Thanh Quân | 1–8 | Cover, shared settings, Binary Search |
+| Vương Quốc Trung | 9–14 | Histogram |
+| Đinh Huỳnh Nguyên Khang | 15–22 | Gaussian Statistics, comparison, closing |
+
 Use the short scripts below. Source references in PPTX notes are not spoken.
 
 - Võ Thanh Quân: 167 seconds, 278 spoken words.

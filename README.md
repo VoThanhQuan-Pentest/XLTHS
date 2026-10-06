@@ -106,13 +106,15 @@ xem kết quả không cần WAV. Chạy lại cần dữ liệu ngoài bộ n�
 PDF slide chung đã có: **Slide_Chung_Nhom03.pdf**, 22 trang tiếng Anh, gồm ba quy
 trình, ba trang minh họa cách tìm ngưỡng, đủ bốn TEST của mỗi người và bảng MAE chung. Hình lấy từ
 các PNG kết quả hiện hành; phóng vùng waveform, STE và F0, giữ nguyên dữ liệu.
+Thiết kế dùng phong cách Coding Workshop của Slidesgo: nền sáng, tiêu đề xanh,
+điểm nhấn cam và họa tiết mạch điện. Nội dung và phân công giữ như bản trước.
 **Không nộp toàn bộ repo hoặc chép WAV/LAB vào thư mục nộp.**
 
 Bản có thể chỉnh sửa và tài liệu hỗ trợ nằm ngoài thư mục nộp:
 
-- `output/slides/Group03_Threshold_Learning_FINAL.pptx`: text, sơ đồ và bảng so sánh chỉnh sửa được.
+- `output/slides/Group03_Coding_Workshop_FINAL_v2.pptx`: bản hiện hành; text, sơ đồ và bảng so sánh chỉnh sửa được.
 - `output/slides/Speaker_Notes_Nhom03.md`: lời nói ngắn bằng tiếng Anh, mỗi người dưới 3 phút dự kiến.
-- `output/slides/Canva_Prompt_Nhom03.txt`: nội dung chi tiết 22 slide; Canva tự chọn phong cách, người dùng thêm ảnh bằng tay.
+- `output/slides/Canva_Prompt_Nhom03.txt`: nội dung chi tiết 22 slide và phong cách Coding Workshop; người dùng thêm ảnh bằng tay.
 
 Phân công slide: Võ Thanh Quân 1–8, Vương Quốc Trung 9–14, Đinh Huỳnh Nguyên Khang
 15–22. Ghi chú nói cũng có trong PPTX; phần dẫn nguồn chỉ để tham khảo, không đọc khi trình bày.

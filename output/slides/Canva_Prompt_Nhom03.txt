@@ -4,7 +4,7 @@ Group: 03.
 
 DESIGN AND PRESENTATION RULES
 
-Choose the visual style yourself. Select an original, coherent academic design, a suitable color palette, readable fonts and layouts. Prioritize clarity, strong contrast and large visual areas. Do not copy the styling of a reference deck.
+Follow the visual style of "Introduction to Coding Workshop by Slidesgo": a pale blue background (#F5F8FF), deep blue titles (#0C0A9E), orange accents (#EB9109), subtle purple details and circuit artwork near the edges. Use IBM Plex Mono Bold for titles and Poppins for body text. Use dark text for readable numbers and captions. Keep the scientific figures large, with a quiet background around them. Preserve the existing slide structure and presentation assignments.
 
 Keep text, workflow diagrams and the comparison table editable. Use fonts of at least 18 pt. Keep each main text line within 10 words and each slide within 7 main text lines. Graph labels and diagram labels must remain readable. Avoid dense paragraphs, theoretical explanations and mathematical formulas. Numerical parameter values are allowed.
 
@@ -62,7 +62,7 @@ Võ Thanh Quân: Binary Search
 Vương Quốc Trung: Histogram
 Đinh Huỳnh Nguyên Khang: Gaussian Statistics
 
-Use a clear title hierarchy and a concise roster. Leave the design style to Canva. No image is required.
+Use a clear title hierarchy and a concise roster. Follow the Coding Workshop cover style with circuit artwork at the corners. No scientific image is required.
 
 Speaking guidance: Introduce the group and the three assigned algorithms. About 10 seconds.
 
