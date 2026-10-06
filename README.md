@@ -37,7 +37,8 @@ XLTHS/
 └── README.md
 ```
 
-Trong `ket_qua/` của mỗi thành viên có bốn hình PNG, bảng MAE/RMSE, `tong_hop.csv`
+Trong `ket_qua/` của mỗi thành viên có bốn hình PNG TEST, hình tìm ngưỡng,
+bảng MAE/RMSE, `tong_hop.csv`
 phân biệt trung bình theo file/gộp biên, danh sách biên,
 tham số huấn luyện, bình luận từng hình và bảng khảo sát nhiễu. Mã Python dùng chung
 `speech_silence/` và dữ liệu tại gốc repo; cần giữ cấu trúc này để chạy lại.
@@ -102,19 +103,19 @@ Chỉ nộp thư mục **03-Phân đoạn tín hiệu thành tiếng nói và kh
 Ba notebook tự chứa mã của từng sinh viên, có sẵn số liệu, bốn đồ thị và bình luận;
 xem kết quả không cần WAV. Chạy lại cần dữ liệu ngoài bộ nộp và chỉnh `DATA_ROOT`.
 
-PDF slide chung đã có: **Slide_Chung_Nhom03.pdf**, 19 trang tiếng Anh, gồm ba quy
-trình thuật toán, đủ bốn TEST của mỗi người và bảng so sánh MAE chung. Hình lấy từ
+PDF slide chung đã có: **Slide_Chung_Nhom03.pdf**, 22 trang tiếng Anh, gồm ba quy
+trình, ba trang minh họa cách tìm ngưỡng, đủ bốn TEST của mỗi người và bảng MAE chung. Hình lấy từ
 các PNG kết quả hiện hành; phóng vùng waveform, STE và F0, giữ nguyên dữ liệu.
 **Không nộp toàn bộ repo hoặc chép WAV/LAB vào thư mục nộp.**
 
 Bản có thể chỉnh sửa và tài liệu hỗ trợ nằm ngoài thư mục nộp:
 
-- `output/slides/Group03_Speech_Silence_FINAL_v2.pptx`: text, sơ đồ và bảng so sánh chỉnh sửa được.
+- `output/slides/Group03_Threshold_Learning_FINAL.pptx`: text, sơ đồ và bảng so sánh chỉnh sửa được.
 - `output/slides/Speaker_Notes_Nhom03.md`: lời nói ngắn bằng tiếng Anh, mỗi người dưới 3 phút dự kiến.
-- `output/slides/Canva_Prompt_Nhom03.txt`: nội dung chi tiết 19 slide; Canva tự chọn phong cách, người dùng thêm ảnh bằng tay.
+- `output/slides/Canva_Prompt_Nhom03.txt`: nội dung chi tiết 22 slide; Canva tự chọn phong cách, người dùng thêm ảnh bằng tay.
 
-Phân công slide: Võ Thanh Quân 1–7, Vương Quốc Trung 8–12, Đinh Huỳnh Nguyên Khang
-13–19. Ghi chú nói cũng có trong PPTX; phần dẫn nguồn chỉ để tham khảo, không đọc khi trình bày.
+Phân công slide: Võ Thanh Quân 1–8, Vương Quốc Trung 9–14, Đinh Huỳnh Nguyên Khang
+15–22. Ghi chú nói cũng có trong PPTX; phần dẫn nguồn chỉ để tham khảo, không đọc khi trình bày.
 
 Tạo lại notebook từ mã Python:
 
@@ -130,4 +131,19 @@ metric từng WAV, mean-file/pooled và khảo sát nhiễu với kết quả c�
 và kiểm tra bộ nộp không chứa dữ liệu âm thanh. Có thể thêm `--only binary`,
 `--only histogram` hoặc `--only statistical` để tạo lại riêng một notebook.
 
-Kiểm tra mã: `python3 -m unittest discover -s tests -v` (26 test, gồm mục tiêu BT1).
+## Hình minh họa cách tìm ngưỡng
+
+- Binary: `tim_nguong_binary.png` vẽ hai mean năng lượng nhầm trên overlap TRAIN và
+  lịch sử thật của 24 vòng chia đôi. Wrapper `binary_threshold` dùng cùng bộ giải có lịch sử.
+- Histogram: bốn file `*_histogram.png` có cột đếm, đường trơn, M1/M2 và T của đúng
+  WAV TEST. Vùng phóng dùng log số khung để thấy đỉnh nhỏ; không dùng LAB TEST chọn đỉnh.
+- Gaussian: `tim_nguong_gaussian.png` có histogram TRAIN quan sát, hai PDF fitted từ
+  mean/std đã học và vùng phóng giao điểm. Mở rộng trục gần zero và log mật độ chỉ
+  đổi cách nhìn, không chuẩn hóa lại từng PDF hay thay T.
+
+`tim_nguong.json` lưu số liệu minh họa; `binh_luan_tim_nguong.md` bình luận từng hình.
+Notebook giữ bốn hình TEST, thêm 1 hình ngưỡng cho Binary/Statistics và 4 cho Histogram.
+Các hình được tính và hiển thị trực tiếp khi chạy kernel, không lấy PNG có sẵn làm output giả.
+Chương trình `.py` lưu rồi đóng hình ngưỡng riêng, vẫn giữ bốn cửa sổ TEST khi demo.
+
+Kiểm tra mã: `python3 -m unittest discover -s tests -v` (30 test, gồm mục tiêu BT1 và minh họa ngưỡng).

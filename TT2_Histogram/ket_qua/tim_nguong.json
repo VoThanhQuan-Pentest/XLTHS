@@ -1,0 +1,94 @@
+[
+  {
+    "method": "histogram",
+    "source": "TEST waveform without LAB",
+    "wav": "phone_F2",
+    "bins": 128,
+    "smooth": 3,
+    "weight": 30,
+    "threshold": 0.005418346774193549,
+    "fallback_used": false,
+    "frames": 480,
+    "peak_indices": [
+      0,
+      6
+    ],
+    "peak_centers": [
+      0.00390625,
+      0.05078125
+    ],
+    "peak_heights": [
+      171.0,
+      6.666666666666667
+    ]
+  },
+  {
+    "method": "histogram",
+    "source": "TEST waveform without LAB",
+    "wav": "phone_M2",
+    "bins": 128,
+    "smooth": 3,
+    "weight": 30,
+    "threshold": 0.006174395161290322,
+    "fallback_used": false,
+    "frames": 280,
+    "peak_indices": [
+      0,
+      9
+    ],
+    "peak_centers": [
+      0.00390625,
+      0.07421875
+    ],
+    "peak_heights": [
+      81.33333333333333,
+      3.3333333333333335
+    ]
+  },
+  {
+    "method": "histogram",
+    "source": "TEST waveform without LAB",
+    "wav": "studio_F2",
+    "bins": 128,
+    "smooth": 3,
+    "weight": 30,
+    "threshold": 0.006174395161290322,
+    "fallback_used": false,
+    "frames": 315,
+    "peak_indices": [
+      0,
+      9
+    ],
+    "peak_centers": [
+      0.00390625,
+      0.07421875
+    ],
+    "peak_heights": [
+      119.0,
+      6.666666666666667
+    ]
+  },
+  {
+    "method": "histogram",
+    "source": "TEST waveform without LAB",
+    "wav": "studio_M2",
+    "bins": 128,
+    "smooth": 3,
+    "weight": 30,
+    "threshold": 0.004914314516129032,
+    "fallback_used": false,
+    "frames": 239,
+    "peak_indices": [
+      0,
+      4
+    ],
+    "peak_centers": [
+      0.00390625,
+      0.03515625
+    ],
+    "peak_heights": [
+      75.66666666666667,
+      4.333333333333333
+    ]
+  }
+]

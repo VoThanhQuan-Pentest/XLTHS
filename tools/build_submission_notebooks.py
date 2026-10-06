@@ -162,7 +162,8 @@ def main() -> dict:
     test = [read_record(p) for p in discover(DATA_ROOT, "TinHieuKiemThu")]
     if len(test) != 4:
         raise ValueError("Bài thực nghiệm yêu cầu đúng bốn WAV test")
-    rows = []
+    rows, learning = [], []
+__TRAIN_LEARNING__
 
     # Khối 3: Mỗi WAV test sinh một figure với đặc trưng, F0, biên xanh/đỏ và bình luận.
     for number, record in enumerate(test, 1):
@@ -170,8 +171,9 @@ def main() -> dict:
         metrics = score(record, features, mask)
         rows.append({"wav": record.name, "method": METHOD, "threshold": threshold,
                      "histogram_fallback": fallback, "snr_estimate_db": estimate_snr(record), **metrics})
+__TEST_LEARNING__
         fig = plot_result(record, METHOD, features, mask, threshold, metrics, fig_num=number)
-        display(fig)
+        display(fig, metadata={"xlths_role": "test", "wav": record.name})
         plt.close(fig)
 
         # Khối 4: LAB test chỉ dùng để đánh giá và giải thích sau dự đoán.
@@ -179,7 +181,8 @@ def main() -> dict:
                            "metrics": metrics, "fallback": fallback}}
         display(Markdown("\\n".join(figure_comments(record, result, METHOD_LABELS))))
     pooled = display_summary(rows)
-    return {"model": model, "calibration": calibration, "rows": rows, "pooled": pooled, "test_records": test}
+    return {"model": model, "calibration": calibration, "rows": rows, "pooled": pooled,
+            "test_records": test, "learning": learning}
 '''
 
 
@@ -279,7 +282,7 @@ DATA_ROOT = Path.cwd()
                        "Chọn giao điểm giữa hai mean; fallback trọng số std. Các thống kê và ngưỡng được in ở phần kết quả.",
     }
     markdown(f"## 4. Thuật toán {label}\n\n{explanations[method]}")
-    names = {"binary": ["binary_threshold"],
+    names = {"binary": ["binary_energy_errors", "binary_search_details", "binary_threshold"],
              "histogram": ["HistogramConfig", "smooth_1d", "histogram_local_maxima", "histogram_peak_pair", "histogram_threshold"],
              "statistical": ["normal_cdf", "gaussian_threshold"]}[method]
     code(source_of(f"{folder}/algorithm.py", names))
@@ -291,7 +294,9 @@ DATA_ROOT = Path.cwd()
              "Hiệu chỉnh trên toàn bốn TRAIN theo biên thừa/thiếu, MAE, tham số nhỏ hơn. "
              "Không dùng LOO; điểm TRAIN không là hiệu suất độc lập. Khóa mô hình trước khi đọc TEST.")
     code(source_of("speech_silence/pipeline.py", ["training_arrays"]) + "\n\n\n" + specialized_training(method))
-    markdown("## 7. Hàm vẽ hình và tạo bình luận\n\nMỗi WAV có một hình với waveform, "
+    markdown("## 7. Hàm vẽ hình và tạo bình luận\n\nCó hình tìm ngưỡng từ dữ liệu thật: "
+             "hai năng lượng nhầm/lịch sử chia đôi, histogram chọn hai đỉnh hoặc hai Gaussian fitted. "
+             "Mỗi WAV TEST vẫn có một hình với waveform, "
              "STE trước/sau median nếu có, ngưỡng, logSTE/logMA, F0. Biên dự đoán xanh, biên chuẩn đỏ. "
              "F0mean LAB chỉ là thống kê tham chiếu, không phải đường F0 chuẩn từng khung.")
     plotting = source_of("speech_silence/pipeline.py", ["plot_result"])
@@ -299,12 +304,41 @@ DATA_ROOT = Path.cwd()
     plotting = plotting.replace("F0mean chuẩn LAB:", "F0mean LAB:")
     comments = source_of("speech_silence/demo.py", ["format_metric", "figure_comments"])
     comments = comments.replace('f"## {record.name}.png"', 'f"### Nhận xét {record.name}.wav"')
-    code(plotting + "\n\n\n" + comments)
+    diagnostic_names = {
+        "binary": ["plot_binary_learning", "learning_figure_comments"],
+        "histogram": ["plot_histogram_learning", "learning_figure_comments"],
+        "statistical": ["gaussian_pdf_values", "plot_gaussian_learning", "learning_figure_comments"],
+    }[method]
+    diagnostic_source = source_of("speech_silence/diagnostics.py", diagnostic_names)
+    code(plotting + "\n\n\n" + comments + "\n\n\n" + diagnostic_source)
     markdown("## 8. Điểm chạy main()\n\nHàm main tự xử lý đủ bốn WAV test, không chọn file thủ công. "
              "Không đọc mô hình/CSV/PNG có sẵn để thay thế việc tính toán.")
-    code(SUMMARY_AND_MAIN)
+    # Mỗi notebook chỉ gọi hàm hình của thuật toán riêng; giữ nguyên mã tính toán TEST.
+    train_learning = ""
+    test_learning = ""
+    if method in ("binary", "statistical"):
+        order = 'model["median_order"]' if method == "binary" else "1"
+        plotter = "plot_binary_learning" if method == "binary" else "plot_gaussian_learning"
+        train_learning = f'''    # Minh họa ngưỡng TRAIN sau khi khóa mô hình, trước khi đánh giá TEST.
+    sil, sp = training_arrays(training, {order})
+    fig, info = {plotter}(sil, sp, model)
+    display(fig, metadata={{"xlths_role": "learning", "method": METHOD}})
+    plt.close(fig)
+    display(Markdown("\\n".join(learning_figure_comments(info))))
+    learning.append(info)
+'''
+    else:
+        test_learning = '''        # Histogram từ waveform TEST, không nhận LAB để chọn đỉnh/T.
+        fig, info = plot_histogram_learning(features.normalized_ste, HistogramConfig(**model["histogram"]),
+                                           threshold, record.name)
+        display(fig, metadata={"xlths_role": "learning", "method": METHOD, "wav": record.name})
+        plt.close(fig)
+        display(Markdown("\\n".join(learning_figure_comments(info))))
+        learning.append(info)
+'''
+    code(SUMMARY_AND_MAIN.replace("__TRAIN_LEARNING__", train_learning).replace("__TEST_LEARNING__", test_learning))
     markdown("## 9. Kết quả đã thực thi\n\nCell dưới đây học ngưỡng/cấu hình từ đầu, "
-             "sau đó tính và xuất bốn hình test cùng nhận xét. Các output được giữ nguyên khi lưu file.")
+             "sau đó xuất hình tìm ngưỡng và bốn hình TEST cùng nhận xét. Các output được giữ nguyên khi lưu file.")
     code("# Một lần gọi main xử lý đủ bốn WAV; kết quả nằm trong output của notebook.\nRESULT = main()")
     markdown("## 10. Nhận xét nhiễu/SNR\n\nSNR nền là ước lượng sau dự đoán. "
              "Q trong khảo sát là tỷ số công suất toàn WAV/nhiễu trắng thêm vào, không phải SNR tiếng nói sạch. "
@@ -332,6 +366,9 @@ def compare_snapshot(snapshot: dict, folder: str) -> None:
     expected_model = next(iter(package["models"].values()))
     if snapshot["model"] != expected_model or snapshot["calibration"] != next(iter(package["calibration"].values())):
         raise ValueError(f"Mô hình hoặc hiệu chỉnh TRAIN khác baseline: {folder}")
+    learning = json.loads((ROOT / folder / "ket_qua/tim_nguong.json").read_text())
+    if snapshot["learning"] != learning:
+        raise ValueError(f"Hình tìm ngưỡng/metadata khác chương trình Python: {folder}")
     with (ROOT / folder / "ket_qua/ket_qua.csv").open(encoding="utf-8-sig") as stream:
         rows = list(csv.DictReader(stream))
     for expected, actual in zip(rows, snapshot["rows"], strict=True):
@@ -360,7 +397,7 @@ def compare_snapshot(snapshot: dict, folder: str) -> None:
             raise ValueError(f"Bảng nhiễu khác baseline: {method}")
 
 
-def validate_notebook(nb, filename: str, expected_count: int = 4) -> dict:
+def validate_notebook(nb, filename: str) -> dict:
     """Nhận notebook đã chạy; kiểm tra output, imports và không có âm thanh/dữ liệu nhúng."""
     nbformat.validate(nb)
     code_cells = [c for c in nb.cells if c.cell_type == "code"]
@@ -369,7 +406,9 @@ def validate_notebook(nb, filename: str, expected_count: int = 4) -> dict:
     if [c.execution_count for c in code_cells] != list(range(1, len(code_cells) + 1)):
         raise ValueError("Cell chưa được chạy tuần tự từ kernel mới")
     allowed = {"__future__", "dataclasses", "functools", "pathlib", "json", "math", "wave", "numpy", "matplotlib", "matplotlib_inline", "IPython"}
-    images = []
+    method = next(row[0] for row in STUDENTS if row[3] == filename)
+    expected_learning = 4 if method == "histogram" else 1
+    images, roles = [], []
     for cell in code_cells:
         for node in ast.walk(ast.parse(cell.source)):
             imported = ([a.name.split('.')[0] for a in node.names] if isinstance(node, ast.Import) else
@@ -386,13 +425,18 @@ def validate_notebook(nb, filename: str, expected_count: int = 4) -> dict:
                 raise ValueError("Notebook nhúng âm thanh/video")
             if "image/png" in data:
                 images.append(base64.b64decode(data["image/png"]))
-    if len(images) != expected_count or any(cell.get("attachments") for cell in nb.cells):
-        raise ValueError("Số hình test không đúng hoặc có attachment ngoài yêu cầu")
-    for index, png in enumerate(images, 1):
+                roles.append(output.get("metadata", {}).get("xlths_role"))
+    if (roles.count("test") != 4 or roles.count("learning") != expected_learning
+            or len(images) != 4 + expected_learning or any(cell.get("attachments") for cell in nb.cells)):
+        raise ValueError("Cần đúng bốn hình TEST và đủ hình tìm ngưỡng; không có attachments")
+    counters = {"test": 0, "learning": 0}
+    for png, role in zip(images, roles, strict=True):
         if not png.startswith(b"\x89PNG\r\n\x1a\n"):
             raise ValueError("Output ảnh không phải PNG hợp lệ")
-        (BUILD / f"{Path(filename).stem}_{index}.png").write_bytes(png)
-    return {"code_cells": len(code_cells), "test_figures": len(images), "errors": 0}
+        counters[role] += 1
+        (BUILD / f"{Path(filename).stem}_{role}_{counters[role]}.png").write_bytes(png)
+    return {"code_cells": len(code_cells), "test_figures": 4, "threshold_figures": expected_learning,
+            "total_figures": len(images), "errors": 0}
 
 
 def main() -> None:
@@ -416,7 +460,8 @@ def main() -> None:
         nb = build_notebook(method, student, folder, label)
         audit = nbformat.v4.new_code_cell('print(json.dumps({"model": RESULT["model"], '
                                         '"calibration": RESULT["calibration"], "rows": RESULT["rows"], '
-                                        '"summary": RESULT["pooled"], "noise": NOISE_SUMMARY}, ensure_ascii=False))')
+                                        '"summary": RESULT["pooled"], "learning": RESULT["learning"], '
+                                        '"noise": NOISE_SUMMARY}, ensure_ascii=False))')
         nb.cells.append(audit)
         client = NotebookClient(nb, timeout=600, kernel_name="xlths-notebooks",
                                 resources={"metadata": {"path": str(ROOT)}}, allow_errors=False)
@@ -433,7 +478,7 @@ def main() -> None:
                       sha256=hashlib.sha256(path.read_bytes()).hexdigest())
         records.append(report)
         (BUILD / f"{method}_snapshot.json").write_text(json.dumps(snapshot, indent=2, ensure_ascii=False), encoding="utf-8")
-        print(f"Đạt: {filename}; {report['code_cells']} cell đã chạy, 4 hình, khớp baseline.", flush=True)
+        print(f"Đạt: {filename}; {report['code_cells']} cell, 4 TEST + {report['threshold_figures']} hình ngưỡng, khớp baseline.", flush=True)
     (BUILD / "notebook_checks.json").write_text(json.dumps(records, ensure_ascii=False, indent=2), encoding="utf-8")
     print(f"Thư mục nộp notebook: {SUBMISSION}", flush=True)
 

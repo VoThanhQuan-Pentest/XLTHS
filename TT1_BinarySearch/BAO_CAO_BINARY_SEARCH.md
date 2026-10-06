@@ -210,6 +210,15 @@ nằm trong độ chính xác đối chiếu và không làm khác biên trên b
 
 ## 9. Chọn median bằng TRAIN và khóa mô hình
 
+Hình tìm ngưỡng được xuất trực tiếp từ cùng bộ giải dùng trong chương trình:
+
+![Cân bằng năng lượng nhầm và lịch sử chia đôi](ket_qua/tim_nguong_binary.png)
+
+Panel trái phóng gần nghiệm, vẽ hai mean năng lượng nhầm từ 118/108 mẫu overlap.
+Panel phải ghi đúng midpoint và hai cận trước từng vòng lặp. Dải khoảng tìm kiếm
+thu hẹp dần; 24 điểm là 24 vòng thật, không phải một đường hội tụ dựng giả.
+Các số liệu đầy đủ nằm trong [tim_nguong.json](ket_qua/tim_nguong.json).
+
 Với mỗi bậc m:
 
 1. Tính d_k, gán nhãn và gộp cả bốn TRAIN.
@@ -305,6 +314,7 @@ giả định phân bố của đặc trưng. Các hình cần đọc cùng số
 |---|---|
 | main.py của thành viên | Chạy riêng Binary trên bốn TEST |
 | algorithm.py: binary_threshold | Overlap-only, chia đôi và xử lý vùng chạm |
+| algorithm.py: binary_search_details | Bộ giải có lịch sử; wrapper học T dùng cùng hàm này |
 | ../speech_silence/features.py | Cửa sổ căn giữa, STE/MA, median, F0, hậu xử lý |
 | ../speech_silence/pipeline.py | Hiệu chỉnh median trên TRAIN, khóa mô hình, suy luận |
 | ../speech_silence/evaluation.py | Greedy, MAE/RMSE, hai kiểu tổng hợp, SNR |
@@ -318,3 +328,5 @@ Notebook VoThanhQuan_BinarySearch.ipynb tự chứa mã và đã lưu output sau
 - [Biên dự đoán](ket_qua/bien_du_doan.csv).
 - [Bình luận từng hình](ket_qua/binh_luan_tung_hinh.md).
 - [Khảo sát nhiễu Binary](ket_qua/khao_sat_nhieu.csv).
+- [Minh họa cách tìm ngưỡng](ket_qua/tim_nguong_binary.png).
+- [Bình luận hình tìm ngưỡng](ket_qua/binh_luan_tim_nguong.md).

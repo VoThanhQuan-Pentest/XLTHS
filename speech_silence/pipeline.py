@@ -24,6 +24,7 @@ from .data import Record, discover, read_record, speech_at, reference_boundaries
 from .evaluation import score, estimate_snr, summarize_scores
 from .features import Features, extract, median_filter, remove_virtual_silence, predicted_boundaries, segments
 from .demo import plot_demo, figure_comments
+from .diagnostics import plot_binary_learning, plot_histogram_learning, plot_gaussian_learning, learning_figure_comments
 from .config import FRAME_MS, HOP_MS, FEATURE_LAYOUT, TRAINING_PROTOCOL, MEDIAN_ORDERS, HISTOGRAM_WEIGHTS
 
 METHODS = ("binary", "histogram", "statistical")
@@ -386,34 +387,9 @@ def plot_comparison(record: Record, predictions: dict[str, tuple[Features, np.nd
 
 
 def plot_distributions(records: list[Record], models: dict, path: Path) -> None:
-    """Vẽ biểu đồ phân bố mật độ xác suất normalized STE của tập huấn luyện.
-
-    Args:
-        records: Danh sách bản ghi huấn luyện.
-        models: Từ điển chứa mô hình và ngưỡng thống kê.
-        path: Đường dẫn lưu ảnh.
-    Returns:
-        None. Lưu phân bố training trong path (hàm hỗ trợ, không gọi trong demo).
-    """
-    # Khối 1: Lấy mẫu năng lượng và khởi tạo đồ thị
+    """Nhận TRAIN/mô hình/path; lưu hình phân bố quan sát, hai Gaussian và giao điểm T."""
     sil, sp = training_arrays(records)
-    fig, axis = plt.subplots(figsize=(10, 5), layout="constrained")
-    bins = np.linspace(0, 1, 101)
-
-    # Khối 2: Vẽ histogram mật độ cho hai lớp Silence và Speech
-    axis.hist(sil, bins=bins, density=True, alpha=0.55, label=f"Silence (n={len(sil)})", color="#56b4e9")
-    axis.hist(sp, bins=bins, density=True, alpha=0.55, label=f"Speech (n={len(sp)})", color="#d55e00")
-    axis.axvline(models["statistical"]["statistical_threshold"], color="black", ls="--",
-                 lw=1.5, label=f"Ngưỡng Gaussian = {models['statistical']['statistical_threshold']:.5f}")
-
-    # Khối 3: Đặt tiêu đề, nhãn trục và lưu ảnh
-    axis.set_xlabel("Năng lượng ngắn hạn chuẩn hóa (STE)", fontsize=10)
-    axis.set_ylabel("Mật độ xác suất", fontsize=10)
-    axis.set_title("Phân bố năng lượng ngắn hạn (Normalized STE) trên tập huấn luyện", fontsize=11, fontweight="bold")
-    axis.set_xlim(0, min(0.3, max(float(np.quantile(sp, 0.9)), 0.03)))
-    axis.grid(True, linestyle=":", alpha=0.5)
-    axis.legend(fontsize=9)
-    fig.savefig(path, dpi=160)
+    fig, _ = plot_gaussian_learning(sil, sp, models["statistical"], path)
     plt.close(fig)
 
 
@@ -471,6 +447,19 @@ def run(root: Path, output: Path, only: str | None = None, noise: bool = True,
     comments = ["# Bình luận bốn figure kiểm thử", "",
                 "Mỗi figure ứng với một WAV và chứa toàn bộ các phương pháp đã chọn.",
                 "Biên ghép là cặp cùng hướng để đo sai lệch, không có dung sai chấp nhận 200 ms.", ""]
+    learning, learning_comments = [], ["# Minh họa quá trình tìm ngưỡng", ""]
+
+    # Khối 2b: Hình ngưỡng TRAIN được lưu/đóng riêng, giữ bốn cửa sổ demo TEST.
+    for method in methods:
+        if method in ("binary", "statistical"):
+            order = models[method]["median_order"] if method == "binary" else 1
+            sil, sp = training_arrays(train, order)
+            plotter = plot_binary_learning if method == "binary" else plot_gaussian_learning
+            filename = "tim_nguong_binary.png" if method == "binary" else "tim_nguong_gaussian.png"
+            fig, info = plotter(sil, sp, models[method], output / filename)
+            plt.close(fig)
+            learning.append(info)
+            learning_comments.extend(learning_figure_comments(info))
 
     # Khối 3: Dự đoán trên 4 tệp kiểm thử và tạo các figure
     for file_idx, record in enumerate(test, 1):
@@ -485,6 +474,14 @@ def run(root: Path, output: Path, only: str | None = None, noise: bool = True,
             metrics = score(record, features, mask)
             all_predictions[method] = {"features": features, "mask": mask, "threshold": threshold,
                                        "metrics": metrics, "fallback": fallback}
+
+            # Khối 3d: Histogram từ waveform TEST, không dùng nhãn để chọn đỉnh/T.
+            if method == "histogram":
+                fig, info = plot_histogram_learning(features.normalized_ste, HistogramConfig(**model["histogram"]),
+                                                     threshold, record.name, output / f"{record.name}_histogram.png")
+                plt.close(fig)
+                learning.append(info)
+                learning_comments.extend(learning_figure_comments(info))
 
             # Lưu số liệu đánh giá
             row = {
@@ -533,6 +530,8 @@ def run(root: Path, output: Path, only: str | None = None, noise: bool = True,
     if noise:
         write_csv(output / "khao_sat_nhieu.csv", noise_rows)
     (output / "binh_luan_tung_hinh.md").write_text("\n".join(comments), encoding="utf-8")
+    (output / "tim_nguong.json").write_text(json.dumps(learning, ensure_ascii=False, indent=2), encoding="utf-8")
+    (output / "binh_luan_tim_nguong.md").write_text("\n".join(learning_comments), encoding="utf-8")
 
     # Khối 5: Sắp xếp 4 Figure lên 4 góc màn hình và hiển thị cho GV quan sát
     if show_gui and demo_figures:

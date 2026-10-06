@@ -1,0 +1,20 @@
+[
+  {
+    "method": "statistical",
+    "source": "TRAIN",
+    "threshold": 0.00276341658111961,
+    "statistics": {
+      "meanSil": 0.00036881104523860185,
+      "stdSil": 0.0006813762384317084,
+      "meanSp": 0.19669020074367452,
+      "stdSp": 0.22855395360434236,
+      "nSil": 503,
+      "nSp": 794
+    },
+    "density_at_threshold": [
+      1.2178328677400154,
+      1.2178328677400132
+    ],
+    "is_density_crossing": true
+  }
+]

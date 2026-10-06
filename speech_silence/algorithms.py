@@ -5,7 +5,7 @@ TT2_Histogram/algorithm.py: Histogram.
 TT3_Statistics/algorithm.py: Statistical Gaussian.
 """
 
-from TT1_BinarySearch.algorithm import binary_threshold
+from TT1_BinarySearch.algorithm import binary_threshold, binary_energy_errors, binary_search_details
 from TT2_Histogram.algorithm import (
     HistogramConfig, smooth_1d, histogram_local_maxima,
     histogram_peak_pair, histogram_threshold, as_model,
@@ -13,7 +13,7 @@ from TT2_Histogram.algorithm import (
 from TT3_Statistics.algorithm import normal_cdf, gaussian_threshold
 
 __all__ = [
-    "binary_threshold", "HistogramConfig", "smooth_1d",
+    "binary_threshold", "binary_energy_errors", "binary_search_details", "HistogramConfig", "smooth_1d",
     "histogram_local_maxima", "histogram_peak_pair",
     "histogram_threshold", "as_model", "normal_cdf", "gaussian_threshold",
 ]
