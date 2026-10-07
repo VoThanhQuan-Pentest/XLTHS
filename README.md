@@ -114,6 +114,7 @@ Bản có thể chỉnh sửa và tài liệu hỗ trợ nằm ngoài thư mục
 
 - `output/slides/Slide_Chung_Nhom03.pptx`: bản hiện hành; text, sơ đồ và bảng so sánh chỉnh sửa được.
 - `output/slides/Speaker_Notes_Nhom03.md`: lời nói ngắn bằng tiếng Anh, mỗi người dưới 3 phút dự kiến.
+- `TT1_BinarySearch/KICH_BAN_TRINH_BAY.md`: lời nói tiếng Việt cho trang 1–8, 3 phút slide và 1 phút demo notebook.
 - `output/slides/Canva_Prompt_Nhom03.txt`: nội dung chi tiết 22 slide và phong cách Coding Workshop; người dùng thêm ảnh bằng tay.
 
 Phân công slide: Võ Thanh Quân 1–8, Vương Quốc Trung 9–14, Đinh Huỳnh Nguyên Khang
