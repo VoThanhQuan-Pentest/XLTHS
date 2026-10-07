@@ -15,9 +15,11 @@ import sys
 import nbformat
 from nbclient import NotebookClient
 
+from notebook_english import english_code, english_markdown, validate_english_notebook
+
 
 ROOT = Path(__file__).resolve().parents[1]
-SUBMISSION = ROOT / "03-Phân đoạn tín hiệu thành tiếng nói và khoảng lặng"
+SUBMISSION = ROOT / "Nhóm_03-Phân_đoạn_tín hiệu_thành_tiếng_nói_và_khoảng_lặng"
 BUILD = ROOT / ".notebook-build"
 STUDENTS = (
     ("binary", "Võ Thanh Quân", "TT1_BinarySearch", "VoThanhQuan_BinarySearch.ipynb", "Binary Search"),
@@ -356,6 +358,10 @@ display(Markdown(f'**{METHOD_LABELS[METHOD]}**: MAE gộp **{format_metric(p["po
                  f'RMSE **{format_metric(p["pooled_rmse_ms"])} ms**; '
                  f'biên ghép/thừa/thiếu **{p["matched"]}/{p["extra"]}/{p["missed"]}**.'))''')
     nb = nbformat.v4.new_notebook(cells=cells)
+    # Translate presentation text without changing the numeric processing.
+    for cell in nb.cells:
+        cell.source = english_code(cell.source) if cell.cell_type == "code" else english_markdown(cell.source)
+    validate_english_notebook(nb)
     nb.metadata.kernelspec = {"name": "python3", "display_name": "Python 3", "language": "python"}
     return nb
 
@@ -400,6 +406,7 @@ def compare_snapshot(snapshot: dict, folder: str) -> None:
 def validate_notebook(nb, filename: str) -> dict:
     """Nhận notebook đã chạy; kiểm tra output, imports và không có âm thanh/dữ liệu nhúng."""
     nbformat.validate(nb)
+    validate_english_notebook(nb)
     code_cells = [c for c in nb.cells if c.cell_type == "code"]
     if len(code_cells) != 11:
         raise ValueError("Notebook phải giữ đủ 11 cell mã của bài riêng")

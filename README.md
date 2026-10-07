@@ -12,7 +12,7 @@
 
 ```text
 XLTHS/
-├── 03-Phân đoạn tín hiệu thành tiếng nói và khoảng lặng/
+├── Nhóm_03-Phân_đoạn_tín hiệu_thành_tiếng_nói_và_khoảng_lặng/
 │   ├── 3 notebook .ipynb đã chạy và lưu kết quả
 │   └── Slide_Chung_Nhom03.pdf
 ├── TT1_BinarySearch/
@@ -29,7 +29,7 @@ XLTHS/
 ├── TinHieuHuanLuyen/         # 4 WAV và LAB tương ứng; README.txt mô tả LAB
 ├── TinHieuKiemThu/           # 4 WAV và LAB tương ứng
 ├── tests/                   # Khung, thuật toán, metric và bảng mục tiêu BT1
-├── tools/build_submission_notebooks.py
+├── tools/                   # Tạo notebook và chuyển nội dung sang tiếng Anh
 ├── output/slides/            # PPTX chỉnh sửa, lời nói và prompt Canva
 ├── main.py                  # Chạy chọn thuật toán hoặc so sánh nhóm
 ├── requirements.txt
@@ -99,8 +99,9 @@ mặc định đã chốt dựa trên báo cáo và thử nghiệm tái tạo, k
 
 ## Bộ nộp
 
-Chỉ nộp thư mục **03-Phân đoạn tín hiệu thành tiếng nói và khoảng lặng**.
-Ba notebook tự chứa mã của từng sinh viên, có sẵn số liệu, bốn đồ thị và bình luận;
+Chỉ nộp thư mục **Nhóm_03-Phân_đoạn_tín hiệu_thành_tiếng_nói_và_khoảng_lặng**.
+Ba notebook tự chứa mã của từng sinh viên; diễn giải, docstring, comment, đồ thị và
+nhận xét đều bằng tiếng Anh, có sẵn số liệu và đủ bốn đồ thị TEST;
 xem kết quả không cần WAV. Chạy lại cần dữ liệu ngoài bộ nộp và chỉnh `DATA_ROOT`.
 
 PDF slide chung đã có: **Slide_Chung_Nhom03.pdf**, 22 trang tiếng Anh, gồm ba quy

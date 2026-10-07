@@ -115,15 +115,15 @@ Hai đường biểu diễn mức lỗi năng lượng trung bình trong vùng c
 
 ## Demo code — 60 giây
 
-Dùng notebook `03-Phân đoạn tín hiệu thành tiếng nói và khoảng lặng/VoThanhQuan_BinarySearch.ipynb`
+Dùng notebook `Nhóm_03-Phân_đoạn_tín hiệu_thành_tiếng_nói_và_khoảng_lặng/VoThanhQuan_BinarySearch.ipynb`
 đã lưu kết quả thực thi, phù hợp thông báo nộp bài mới của thầy.
 
 ### Chuẩn bị trước khi trình bày
 
 - Mở slide và notebook trước khi đến lượt.
-- Trong notebook, chuẩn bị vị trí **mục 4 — Thuật toán Binary Search**, code cell có số thực thi `[4]`.
+- Trong notebook, chuẩn bị vị trí **mục 4 — Binary Search algorithm**, code cell có số thực thi `[4]`.
   Đặt màn hình ở đoạn `delta`, điều kiện dừng và cập nhật `lo`/`hi`.
-- Chuẩn bị vị trí **mục 9 — Kết quả đã thực thi**, code cell `[9]`, nơi gọi `RESULT = main()`.
+- Chuẩn bị vị trí **mục 9 — Executed results**, code cell `[9]`, nơi gọi `RESULT = main()`.
   Output có mô hình học được, hình tìm ngưỡng, bốn hình TEST và bảng kết quả.
 - Thu gọn các cell định nghĩa dài để chuyển giữa hai vị trí nhanh.
 
