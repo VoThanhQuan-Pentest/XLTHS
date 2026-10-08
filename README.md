@@ -31,6 +31,7 @@ XLTHS/
 ├── tests/                   # Khung, thuật toán, metric và bảng mục tiêu BT1
 ├── tools/                   # Tạo notebook và chuyển nội dung sang tiếng Anh
 ├── output/slides/            # PPTX chỉnh sửa, lời nói và prompt Canva
+├── output/on_thi/            # 6 bản Word ôn thi, mỗi bản 2 trang A4
 ├── main.py                  # Chạy chọn thuật toán hoặc so sánh nhóm
 ├── requirements.txt
 ├── requirements-notebooks.txt
@@ -151,3 +152,13 @@ Các hình được tính và hiển thị trực tiếp khi chạy kernel, khô
 Chương trình `.py` lưu rồi đóng hình ngưỡng riêng, vẫn giữ bốn cửa sổ TEST khi demo.
 
 Kiểm tra mã: `python3 -m unittest discover -s tests -v` (30 test, gồm mục tiêu BT1 và minh họa ngưỡng).
+
+## Tài liệu ôn thi
+
+`output/on_thi/` chứa sáu file Word: `Binary_Search_VI.docx`,
+`Binary_Search_EN.docx`, `Histogram_VI.docx`, `Histogram_EN.docx`,
+`Gaussian_Statistics_VI.docx` và `Gaussian_Statistics_EN.docx`.
+Mỗi bản có hai trang A4, in hai mặt lật cạnh dài; gồm công thức chỉnh sửa được,
+giải thích ký hiệu, luồng TRAIN/TEST, ví dụ tính toán, số liệu bốn TEST và các điểm
+dễ nhầm. Nội dung khớp mã hiện hành; hai ngôn ngữ dùng cùng công thức và số liệu.
+Đây là tài liệu ôn tập riêng, đặt ngoài thư mục nộp.
